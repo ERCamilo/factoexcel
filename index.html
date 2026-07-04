@@ -8,6 +8,7 @@
 <script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/exceljs/4.4.0/exceljs.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.2.0/dist/chartjs-plugin-datalabels.min.js"></script>
 <style>
   :root{
     /* Tema claro INCART (por defecto) — colores del logo institucional */
@@ -95,11 +96,12 @@
   .aging{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:16px}
   .aging .chip{background:var(--chip);border:1px solid var(--line);border-radius:20px;padding:6px 13px;font-size:13px}
   .aging .chip b{color:var(--link)}
-  .charts{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:6px}
-  .chartbox{background:var(--panel2);border:1px solid var(--line);border-radius:8px;padding:12px}
-  .chartbox h3{margin:0 0 8px;font-size:12px;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.3px}
-  .chartwrap{position:relative;height:220px}
-  @media(max-width:760px){.charts{grid-template-columns:1fr}}
+  .charts{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:6px}
+  .chartbox{background:var(--panel2);border:1px solid var(--line);border-radius:8px;padding:10px 12px}
+  .chartbox h3{margin:0 0 6px;font-size:11px;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.3px}
+  .chartwrap{position:relative;height:260px}
+  @media(max-height:800px){.chartwrap{height:210px}}
+  @media(max-width:760px){.charts{grid-template-columns:1fr} .chartwrap{height:220px}}
   .tablewrap{overflow:auto;max-height:60vh;border:1px solid var(--line);border-radius:10px}
   table{border-collapse:collapse;width:100%;font-size:13px}
   th,td{padding:6px 8px;text-align:left;white-space:nowrap;border-bottom:1px solid var(--line)}
@@ -317,11 +319,20 @@
   <div id="tabGraficos" class="tabpanel" hidden>
     <div class="card" id="dashCard">
       <h2>Panel de análisis (balance pendiente)</h2>
+      <div id="kpis2" class="summary" style="margin-bottom:14px"></div>
       <div class="charts">
         <div class="chartbox"><h3>Antigüedad de la deuda (aging)</h3><div class="chartwrap"><canvas id="chAging"></canvas></div></div>
         <div class="chartbox"><h3>Deuda por año</h3><div class="chartwrap"><canvas id="chYear"></canvas></div></div>
-        <div class="chartbox"><h3>Top 10 suplidores</h3><div class="chartwrap"><canvas id="chSup"></canvas></div></div>
+        <div class="chartbox"><h3>Top 10 suplidores (deuda)</h3><div class="chartwrap"><canvas id="chSup"></canvas></div></div>
         <div class="chartbox"><h3>Medicamento vs. no medicamento</h3><div class="chartwrap"><canvas id="chMed"></canvas></div></div>
+      </div>
+      <h2 style="margin-top:20px">Análisis detallado</h2>
+      <div class="charts">
+        <div class="chartbox" style="grid-column:1/-1"><h3>Tendencia de deuda por mes (balance acumulado)</h3><div class="chartwrap"><canvas id="chTrend"></canvas></div></div>
+        <div class="chartbox"><h3>Top 10 facturas más costosas</h3><div class="chartwrap"><canvas id="chTopInv"></canvas></div></div>
+        <div class="chartbox"><h3>Distribución por cuenta presupuestaria</h3><div class="chartwrap"><canvas id="chCuenta"></canvas></div></div>
+        <div class="chartbox"><h3>Concentración de proveedores</h3><div class="chartwrap"><canvas id="chConc"></canvas></div></div>
+        <div class="chartbox"><h3>Velocidad de pago (días promedio)</h3><div class="chartwrap"><canvas id="chSpeed"></canvas></div></div>
       </div>
     </div>
   </div>
@@ -434,14 +445,29 @@ function applyFilter(){
 let _charts={};
 function mkChart(id,cfg){const el=$(id);if(!el||typeof Chart==="undefined")return;if(_charts[id])_charts[id].destroy();_charts[id]=new Chart(el,cfg);}
 function cssVar(name,fallback){return getComputedStyle(document.documentElement).getPropertyValue(name).trim()||fallback;}
+function pctLabel(val,dataset){const total=dataset.reduce((s,v)=>s+(+v||0),0);return total?((val/total)*100).toFixed(1)+"%":"";
+}
 function baseOpts(horizontal){
   const grid=cssVar("--line","#334155");
+  const lblColor=cssVar("--txt","#e2e8f0");
   return{responsive:true,maintainAspectRatio:false,
-    plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>" "+Number(c.parsed[horizontal?"x":"y"]).toLocaleString("es-DO",{maximumFractionDigits:2})}}},
+    plugins:{
+      legend:{display:false},
+      tooltip:{callbacks:{label:c=>{
+        const v=Number(c.parsed[horizontal?"x":"y"]);
+        const ds=c.dataset.data;
+        const total=ds.reduce((s,n)=>s+(+n||0),0);
+        const pct=total?((v/total)*100).toFixed(1)+"%":"";
+        return " "+v.toLocaleString("es-DO",{maximumFractionDigits:2})+" ("+pct+")";
+      }}},
+      datalabels:{color:lblColor,font:{size:11,weight:"bold"},anchor:"end",align:horizontal?"right":"top",offset:2,
+        formatter:(val,ctx)=>pctLabel(val,ctx.dataset.data)}
+    },
     scales:{x:{grid:{color:grid}},y:{grid:{color:grid}}}};
 }
 function renderCharts(){
   if(typeof Chart==="undefined")return;
+  if(typeof ChartDataLabels!=="undefined")Chart.register(ChartDataLabels);
   Chart.defaults.color=cssVar("--muted","#94a3b8");
   const a=analytics(cache);
   mkChart("chAging",{type:"bar",data:{labels:a.AG,datasets:[{data:a.AG.map(k=>a.aging[k]),
@@ -450,12 +476,108 @@ function renderCharts(){
   mkChart("chYear",{type:"bar",data:{labels:years,datasets:[{data:years.map(y=>a.byYear[y]),
     backgroundColor:"#38bdf8"}]},options:baseOpts()});
   const top=a.topSup.slice(0,10);
+  const supOpts=baseOpts(true);
+  supOpts.plugins.datalabels.font={size:10,weight:"bold"};
   mkChart("chSup",{type:"bar",data:{labels:top.map(s=>s.name.length>24?s.name.slice(0,24)+"…":s.name),
-    datasets:[{data:top.map(s=>s.sum),backgroundColor:"#0ea5e9"}]},options:{...baseOpts(true),indexAxis:"y"}});
+    datasets:[{data:top.map(s=>s.sum),backgroundColor:"#0ea5e9"}]},options:{...supOpts,indexAxis:"y"}});
+  const medTotal=a.med.S+a.med.N;
   mkChart("chMed",{type:"doughnut",data:{labels:["Medicamento (S)","No medicamento (N)"],
     datasets:[{data:[a.med.S,a.med.N],backgroundColor:["#22c55e","#64748b"]}]},
     options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:"bottom"},
-    tooltip:{callbacks:{label:c=>" "+c.label+": "+Number(c.parsed).toLocaleString("es-DO",{maximumFractionDigits:2})}}}}});
+    datalabels:{color:"#fff",font:{size:12,weight:"bold"},
+      formatter:(val)=>medTotal?((val/medTotal)*100).toFixed(1)+"%":""},
+    tooltip:{callbacks:{label:c=>{
+      const pct=medTotal?((c.parsed/medTotal)*100).toFixed(1)+"%":"";
+      return " "+c.label+": "+Number(c.parsed).toLocaleString("es-DO",{maximumFractionDigits:2})+" ("+pct+")";
+    }}}}}});
+
+  // ===== NUEVOS GRÁFICOS =====
+  const grid=cssVar("--line","#334155");
+  const lblColor=cssVar("--txt","#e2e8f0");
+
+  // 1) Tendencia de deuda por mes (línea)
+  const byMonth={};
+  cache.forEach(f=>{
+    const m=(f.fechaEmision||"").slice(0,7); // YYYY-MM
+    if(m){byMonth[m]=(byMonth[m]||0)+f._balance;}
+  });
+  const months=Object.keys(byMonth).sort();
+  const monthLabels=months.map(m=>{const[y,mo]=m.split("-");return `${mo}/${y}`;});
+  mkChart("chTrend",{type:"line",data:{labels:monthLabels,datasets:[{
+    data:months.map(m=>byMonth[m]),borderColor:"#38bdf8",backgroundColor:"rgba(56,189,248,.15)",
+    fill:true,tension:.3,pointRadius:4,pointBackgroundColor:"#0ea5e9"}]},
+    options:{responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{display:false},datalabels:{display:false},
+        tooltip:{callbacks:{label:c=>" "+Number(c.parsed.y).toLocaleString("es-DO",{maximumFractionDigits:2})}}},
+      scales:{x:{grid:{color:grid}},y:{grid:{color:grid},ticks:{callback:v=>money(v)}}}}});
+
+  // 2) Top 10 facturas más costosas (barras horizontales)
+  const topInv=[...cache].sort((a,b)=>b._total-a._total).slice(0,10);
+  const topInvOpts=baseOpts(true);
+  topInvOpts.plugins.datalabels={display:false};
+  mkChart("chTopInv",{type:"bar",data:{
+    labels:topInv.map(f=>(f.suplidor||"").slice(0,20)+" — "+(f.noFactura||"").slice(0,15)),
+    datasets:[{data:topInv.map(f=>f._total),
+      backgroundColor:topInv.map((_,i)=>i<3?"#ef4444":i<6?"#f59e0b":"#38bdf8")}]},
+    options:{...topInvOpts,indexAxis:"y"}});
+
+  // 3) Distribución por cuenta presupuestaria (doughnut)
+  const byCuenta={};
+  cache.filter(f=>f._balance>0.005).forEach(f=>{
+    const c=f.cuentaPresup||"(sin cuenta)";
+    byCuenta[c]=(byCuenta[c]||0)+f._balance;
+  });
+  const cuentas=Object.entries(byCuenta).sort((a,b)=>b[1]-a[1]).slice(0,8);
+  const cuentaRest=Object.entries(byCuenta).sort((a,b)=>b[1]-a[1]).slice(8).reduce((s,e)=>s+e[1],0);
+  const cuentaLabels=cuentas.map(([k])=>k);
+  const cuentaData=cuentas.map(([,v])=>v);
+  if(cuentaRest>0){cuentaLabels.push("Otros");cuentaData.push(cuentaRest);}
+  const cuentaTotal=cuentaData.reduce((s,v)=>s+v,0);
+  const cuentaColors=["#22c55e","#38bdf8","#f59e0b","#ef4444","#8b5cf6","#ec4899","#14b8a6","#f97316","#64748b"];
+  mkChart("chCuenta",{type:"doughnut",data:{labels:cuentaLabels,datasets:[{data:cuentaData,backgroundColor:cuentaColors}]},
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:"right",labels:{boxWidth:12,font:{size:10}}},
+    datalabels:{color:"#fff",font:{size:10,weight:"bold"},formatter:val=>cuentaTotal?((val/cuentaTotal)*100).toFixed(0)+"%":""},
+    tooltip:{callbacks:{label:c=>{
+      const pct=cuentaTotal?((c.parsed/cuentaTotal)*100).toFixed(1)+"%":"";
+      return " "+c.label+": "+Number(c.parsed).toLocaleString("es-DO",{maximumFractionDigits:2})+" ("+pct+")";
+    }}}}}});
+
+  // 4) Concentración de proveedores (doughnut top 5 vs resto)
+  const top5=a.topSup.slice(0,5);
+  const top5sum=top5.reduce((s,e)=>s+e.sum,0);
+  const restSum=a.topSup.slice(5).reduce((s,e)=>s+e.sum,0);
+  const concLabels=[...top5.map(s=>s.name.length>20?s.name.slice(0,20)+"…":s.name)];
+  const concData=[...top5.map(s=>s.sum)];
+  if(restSum>0){concLabels.push("Resto ("+Math.max(0,a.topSup.length-5)+")");concData.push(restSum);}
+  const concTotal=concData.reduce((s,v)=>s+v,0);
+  mkChart("chConc",{type:"doughnut",data:{labels:concLabels,datasets:[{data:concData,
+    backgroundColor:["#0ea5e9","#22c55e","#f59e0b","#8b5cf6","#ec4899","#64748b"]}]},
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:"right",labels:{boxWidth:12,font:{size:10}}},
+    datalabels:{color:"#fff",font:{size:10,weight:"bold"},formatter:val=>concTotal?((val/concTotal)*100).toFixed(0)+"%":""},
+    tooltip:{callbacks:{label:c=>{
+      const pct=concTotal?((c.parsed/concTotal)*100).toFixed(1)+"%":"";
+      return " "+c.label+": "+Number(c.parsed).toLocaleString("es-DO",{maximumFractionDigits:2})+" ("+pct+")";
+    }}}}}});
+
+  // 5) Velocidad de pago por suplidor (barras horizontales — solo pagadas)
+  const paidBySup={},paidCountBySup={};
+  cache.filter(f=>f.fechaPago&&f.fechaEmision&&f._balance<=0.005).forEach(f=>{
+    const emi=parseDate(f.fechaEmision),pag=parseDate(f.fechaPago);
+    if(!emi||!pag)return;
+    const days=Math.max(0,(pag-emi)/86400000);
+    const s=f.suplidor;
+    paidBySup[s]=(paidBySup[s]||0)+days;
+    paidCountBySup[s]=(paidCountBySup[s]||0)+1;
+  });
+  const speedData=Object.entries(paidBySup).map(([name,tot])=>({name,avg:Math.round(tot/paidCountBySup[name])}))
+    .sort((a,b)=>b.avg-a.avg).slice(0,10);
+  const speedOpts=baseOpts(true);
+  speedOpts.plugins.datalabels={color:lblColor,font:{size:10,weight:"bold"},anchor:"end",align:"right",
+    formatter:val=>val+" d"};
+  mkChart("chSpeed",{type:"bar",data:{labels:speedData.map(s=>s.name.length>22?s.name.slice(0,22)+"…":s.name),
+    datasets:[{data:speedData.map(s=>s.avg),
+      backgroundColor:speedData.map(s=>s.avg>60?"#ef4444":s.avg>30?"#f59e0b":"#22c55e")}]},
+    options:{...speedOpts,indexAxis:"y"}});
 }
 
 function renderKpis(){
@@ -464,12 +586,33 @@ function renderKpis(){
   const totPag=cache.reduce((s,f)=>s+(+f.valorPagado||0),0);
   const totBal=cache.reduce((s,f)=>s+f._balance,0);
   const pend=cache.filter(f=>f._balance>0.005);
+  const avg=nTot?totFact/nTot:0;
+  // factura más costosa
+  const maxInv=cache.reduce((mx,f)=>f._total>mx._total?f:mx,{_total:0,suplidor:"—"});
+  // velocidad de pago (promedio de días entre emisión y pago, solo facturas pagadas)
+  const paid=cache.filter(f=>f.fechaPago&&f.fechaEmision&&f._balance<=0.005);
+  const avgDaysPay=paid.length?Math.round(paid.reduce((s,f)=>{
+    const emi=parseDate(f.fechaEmision),pag=parseDate(f.fechaPago);
+    return s+(emi&&pag?Math.max(0,(pag-emi)/86400000):0);
+  },0)/paid.length):null;
+
   $("kpis").innerHTML=`
     <div class="kpi"><div class="lbl">Facturas</div><div class="val">${nTot}</div></div>
     <div class="kpi"><div class="lbl">Total facturado</div><div class="val">${money(totFact)}</div></div>
     <div class="kpi pag"><div class="lbl">Pagado</div><div class="val">${money(totPag)}</div></div>
     <div class="kpi bal"><div class="lbl">Balance pendiente</div><div class="val">${money(totBal)}</div></div>
-    <div class="kpi"><div class="lbl">Pendientes</div><div class="val">${pend.length}</div></div>`;
+    <div class="kpi"><div class="lbl">Pendientes</div><div class="val">${pend.length}</div></div>
+    <div class="kpi"><div class="lbl">Promedio por factura</div><div class="val">${money(avg)}</div></div>`;
+
+  // KPIs secundarios en panel de gráficos
+  const kpis2=$("kpis2");
+  if(kpis2) kpis2.innerHTML=`
+    <div class="kpi"><div class="lbl">Promedio por factura</div><div class="val">${money(avg)}</div></div>
+    <div class="kpi"><div class="lbl">Factura más costosa</div><div class="val">${money(maxInv._total)}</div><div style="font-size:11px;color:var(--muted);margin-top:2px">${esc(maxInv.suplidor).slice(0,30)}</div></div>
+    <div class="kpi"><div class="lbl">Velocidad de pago</div><div class="val">${avgDaysPay!=null?avgDaysPay+" días":"—"}</div><div style="font-size:11px;color:var(--muted);margin-top:2px">${paid.length} factura(s) pagada(s)</div></div>
+    <div class="kpi bal"><div class="lbl">Balance pendiente</div><div class="val">${money(totBal)}</div></div>
+    <div class="kpi"><div class="lbl">Suplidores únicos</div><div class="val">${new Set(cache.map(f=>f.suplidor)).size}</div></div>`;
+
   // aging over pending
   const buckets={"0-30":0,"31-60":0,"61-90":0,"91 O MAS":0,"365 O MAS":0};
   pend.forEach(f=>{if(buckets[f._aging]!=null)buckets[f._aging]+=f._balance;});
