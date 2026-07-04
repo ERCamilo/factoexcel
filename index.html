@@ -122,6 +122,13 @@
   .toast.show{opacity:1;transform:translateY(0)}
   .toast.err{background:var(--bad);color:#fff}
   details.moreflds summary{cursor:pointer;color:var(--link);font-size:13px;font-weight:600;margin:6px 0 10px}
+  .theme-switch{display:flex;align-items:center;gap:6px;cursor:pointer;user-select:none}
+  .theme-switch span{font-size:15px;line-height:1}
+  .theme-switch input{display:none}
+  .theme-track{width:40px;height:22px;background:rgba(255,255,255,.25);border-radius:11px;position:relative;transition:.25s}
+  .theme-track::after{content:"";position:absolute;top:3px;left:3px;width:16px;height:16px;background:#fff;border-radius:50%;transition:.25s}
+  .theme-switch input:checked+.theme-track{background:var(--accent2)}
+  .theme-switch input:checked+.theme-track::after{left:21px}
   @media(max-width:1200px){.datosgrid{grid-template-columns:320px 1fr}}
   @media(max-width:900px){.datosgrid{grid-template-columns:1fr}}
   @media(max-width:640px){
@@ -151,7 +158,7 @@
     <label>Fecha de corte
       <input type="date" id="reportDate" style="width:150px;margin-top:2px">
     </label>
-    <button class="ghost" id="btnTheme" title="Cambiar tema claro/oscuro">🌙</button>
+    <label class="theme-switch" title="Cambiar tema claro/oscuro"><span>☀️</span><input type="checkbox" id="themeToggle"><span class="theme-track"></span><span>🌙</span></label>
     <div class="dropdown">
       <button class="ghost" id="btnMenu">⚙ Ajustes ▾</button>
       <div class="menu" id="menu" hidden>
@@ -859,10 +866,10 @@ function applyTheme(t){
   t = t==="dark"?"dark":"light";
   document.documentElement.setAttribute("data-theme",t);
   localStorage.setItem("cxp_theme",t);
-  const b=$("btnTheme"); if(b) b.textContent = t==="dark"?"☀️":"🌙";
-  if(cache.length) renderCharts(); // recolorea ejes/grillas al cambiar de tema
+  const cb=$("themeToggle"); if(cb) cb.checked = t==="dark";
+  if(cache.length) renderCharts();
 }
-$("btnTheme").onclick=()=>applyTheme(document.documentElement.getAttribute("data-theme")==="dark"?"light":"dark");
+$("themeToggle").addEventListener("change",e=>applyTheme(e.target.checked?"dark":"light"));
 // menú desplegable Ajustes
 $("btnMenu").onclick=e=>{e.stopPropagation();$("menu").hidden=!$("menu").hidden;};
 $("menu").querySelectorAll("button").forEach(b=>b.addEventListener("click",()=>{$("menu").hidden=true;}));
