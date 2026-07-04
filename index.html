@@ -34,20 +34,21 @@
   }
   *{box-sizing:border-box}
   body{margin:0;font-family:"Segoe UI",Arial,sans-serif;background:var(--bg);color:var(--txt);font-size:14px}
-  header{background:linear-gradient(90deg,var(--accent2),var(--accent));color:#fff;padding:14px 20px;display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap}
-  .brand{display:flex;align-items:center;gap:14px}
-  .logo{background:#fff;padding:6px 12px;border-radius:8px;display:flex;align-items:center;box-shadow:0 1px 4px rgba(0,0,0,.15)}
-  .logo img{height:34px;width:auto;display:block}
-  header h1{margin:0;font-size:18px;letter-spacing:.3px}
-  header .sub{font-size:12px;opacity:.85}
-  .toolbar{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+  header{background:linear-gradient(90deg, #0b1a30, #1b3d68);border-bottom:2px solid rgba(255,255,255,.08);color:#fff;padding:10px 20px;display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap}
+  .brand{display:flex;align-items:center;gap:16px}
+  .logo{padding:2px 0;display:flex;align-items:center}
+  .logo img{height:54px;width:auto;display:block}
+  header h1{margin:0;font-size:19px;letter-spacing:.2px;font-weight:600}
+  header .sub{font-size:11.5px;color:#e0f2fe;opacity:.85;margin-top:2px}
+  .toolbar{display:flex;gap:12px;flex-wrap:wrap;align-items:center}
   .toolbar label{font-size:12px;color:#e0f2fe}
   button{cursor:pointer;border:none;border-radius:6px;padding:8px 12px;font-size:13px;font-weight:600;background:var(--panel2);color:var(--txt);transition:.15s}
   button:hover{filter:brightness(1.15)}
   button.primary{background:var(--accent2);color:#fff}
   button.ok{background:var(--ok);color:#052e16}
-  button.ghost{background:transparent;border:1px solid var(--accent);color:var(--accent2)}
-  header button.ghost{border-color:#bfe3f7;color:#eaf7ff}
+  button.ghost{background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.15);color:#fff}
+  button.ghost:hover{background:rgba(255,255,255,.12);border-color:rgba(255,255,255,.3)}
+  header button.ghost{color:#fff;display:inline-flex;align-items:center;gap:6px}
   button.danger{background:transparent;color:#fca5a5;border:1px solid #7f1d1d;padding:4px 8px;font-size:12px}
   button.mini{padding:4px 8px;font-size:12px}
   input,select,textarea{background:var(--field);border:1px solid var(--line);color:var(--txt);border-radius:6px;padding:7px 9px;font-size:13px;width:100%;font-family:inherit}
@@ -64,11 +65,11 @@
   .menu button:hover{background:var(--panel2)}
   .menu[hidden]{display:none}
   .menusep{height:1px;background:var(--line);margin:4px 2px}
-  .filterbar{display:flex;align-items:center;gap:14px;flex-wrap:wrap;background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:10px 14px;margin-bottom:14px}
-  .filterbar .fl{font-size:12.5px;font-weight:700;color:var(--link)}
-  .filterbar label{font-size:12px;color:var(--muted);display:flex;align-items:center;gap:6px}
-  .filterbar input[type=date]{width:150px}
-  .filterbar .info{color:var(--muted);font-weight:400;font-size:12px}
+  .filterbar{display:flex;align-items:center;gap:12px;flex-wrap:wrap;background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:6px 12px;margin-bottom:14px;box-shadow:0 1px 3px rgba(0,0,0,.02)}
+  .filterbar .fl{font-size:12px;font-weight:700;color:var(--link);display:flex;align-items:center;gap:4px}
+  .filterbar label{font-size:11.5px;color:var(--muted);display:flex;align-items:center;gap:6px}
+  .filterbar input[type=date]{width:130px;padding:4px 6px;font-size:12px;border-radius:5px}
+  .filterbar .info{color:var(--muted);font-weight:400;font-size:11.5px;margin-left:auto}
   .modal{position:fixed;inset:0;background:rgba(0,0,0,.55);display:flex;align-items:center;justify-content:center;z-index:100;padding:20px}
   .modal[hidden]{display:none}
   .modalbox{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:22px;width:min(760px,100%);max-height:90vh;overflow:auto;box-shadow:0 20px 60px rgba(0,0,0,.5)}
@@ -87,15 +88,38 @@
   .field{margin-bottom:10px}
   .field label{display:block;font-size:12px;color:var(--muted);margin-bottom:3px}
   .field .req{color:var(--bad)}
-  .summary{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px;margin-bottom:16px}
-  .kpi{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:14px}
-  .kpi .lbl{font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px}
-  .kpi .val{font-size:22px;font-weight:700;margin-top:4px}
-  .kpi.bal .val{color:var(--warn)}
+  .summary{display:grid;grid-template-columns:300px 1fr;gap:14px;margin-bottom:14px}
+  .kpi-hero{background:linear-gradient(135deg, var(--panel), var(--panel2));border:1px solid var(--line);border-left:4px solid var(--warn);border-radius:10px;padding:16px;display:flex;flex-direction:column;justify-content:space-between;box-shadow:0 2px 8px rgba(0,0,0,.05)}
+  .kpi-hero .lbl{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;font-weight:700}
+  .kpi-hero .val{font-size:24px;font-weight:800;color:var(--warn);margin:6px 0}
+  .kpi-hero .progress-wrap{width:100%;background:var(--chip);height:6px;border-radius:3px;margin:8px 0;overflow:hidden}
+  .kpi-hero .progress-bar{height:100%;background:var(--ok);transition:.3s}
+  .kpi-hero .subtext{font-size:11px;color:var(--muted)}
+  .kpi-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:10px}
+  .kpi{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:10px 12px;box-shadow:0 1px 4px rgba(0,0,0,.02)}
+  .kpi .lbl{font-size:10.5px;color:var(--muted);text-transform:uppercase;letter-spacing:.3px}
+  .kpi .val{font-size:17px;font-weight:700;margin-top:3px}
+  .kpi.pag{border-left:3px solid var(--ok)}
   .kpi.pag .val{color:var(--ok)}
-  .aging{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:16px}
-  .aging .chip{background:var(--chip);border:1px solid var(--line);border-radius:20px;padding:6px 13px;font-size:13px}
-  .aging .chip b{color:var(--link)}
+  .aging-panel{background:var(--panel2);border:1px solid var(--line);border-radius:8px;padding:8px 12px;margin-top:10px;display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+  .aging-panel .title{font-size:11px;color:var(--muted);font-weight:700;text-transform:uppercase}
+  .aging-chips{display:flex;gap:6px;flex-wrap:wrap}
+  .aging-chip{background:var(--panel);border:1px solid var(--line);border-radius:20px;padding:4px 10px;font-size:11.5px;color:var(--muted);transition:.2s}
+  .aging-chip.active{background:var(--chip);border-color:var(--accent);color:var(--txt);font-weight:600}
+  .aging-chip.active b{color:var(--link)}
+  .metrics-bar{display:flex;flex-wrap:wrap;background:var(--panel2);border:1px solid var(--line);border-radius:8px;padding:8px 14px;gap:12px;justify-content:space-between;margin-bottom:14px;box-shadow:0 1px 3px rgba(0,0,0,.02)}
+  .metric-item{flex:1;min-width:120px;border-right:1px solid var(--line);padding-right:12px}
+  .metric-item:last-child{border-right:none;padding-right:0}
+  .metric-item .lbl{font-size:10px;color:var(--muted);text-transform:uppercase;font-weight:700;letter-spacing:.3px}
+  .metric-item .val{font-size:15px;font-weight:700;margin-top:2px;color:var(--txt)}
+  .metric-item .val.highlight{color:var(--warn)}
+  .metric-item .detail{font-size:9.5px;color:var(--muted);margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:160px}
+  @media(max-width:900px){
+    .summary{grid-template-columns:1fr}
+    .metrics-bar{flex-direction:column;align-items:stretch}
+    .metric-item{border-right:none;border-bottom:1px solid var(--line);padding-right:0;padding-bottom:8px}
+    .metric-item:last-child{border-bottom:none;padding-bottom:0}
+  }
   .charts{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:6px}
   .chartbox{background:var(--panel2);border:1px solid var(--line);border-radius:8px;padding:10px 12px}
   .chartbox h3{margin:0 0 6px;font-size:11px;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.3px}
@@ -124,13 +148,17 @@
   .toast.show{opacity:1;transform:translateY(0)}
   .toast.err{background:var(--bad);color:#fff}
   details.moreflds summary{cursor:pointer;color:var(--link);font-size:13px;font-weight:600;margin:6px 0 10px}
-  .theme-switch{display:flex;align-items:center;gap:6px;cursor:pointer;user-select:none}
-  .theme-switch span{font-size:15px;line-height:1}
-  .theme-switch input{display:none}
-  .theme-track{width:40px;height:22px;background:rgba(255,255,255,.25);border-radius:11px;position:relative;transition:.25s}
-  .theme-track::after{content:"";position:absolute;top:3px;left:3px;width:16px;height:16px;background:#fff;border-radius:50%;transition:.25s}
-  .theme-switch input:checked+.theme-track{background:var(--accent2)}
-  .theme-switch input:checked+.theme-track::after{left:21px}
+  .theme-toggle-btn{background:transparent;border:none;color:#fff;cursor:pointer;width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;transition:background .2s, transform .3s;padding:0}
+  .theme-toggle-btn:hover{background:rgba(255,255,255,.1)}
+  .theme-toggle-btn:active{transform:scale(.92)}
+  .sun-icon{display:none}
+  .moon-icon{display:block}
+  [data-theme="dark"] .sun-icon{display:block}
+  [data-theme="dark"] .moon-icon{display:none}
+  .btn-icon-wrap{display:inline-flex;align-items:center;gap:6px}
+  .tab-icon, .menu-icon{stroke-width:2.2;vertical-align:middle;display:inline-block}
+  .menu button{display:flex;align-items:center;gap:8px}
+  .tab{display:inline-flex;align-items:center;gap:6px}
   @media(max-width:1200px){.datosgrid{grid-template-columns:320px 1fr}}
   @media(max-width:900px){.datosgrid{grid-template-columns:1fr}}
   @media(max-width:640px){
@@ -150,31 +178,56 @@
 <body>
 <header>
   <div class="brand">
-    <div class="logo"><img src="incart-logo.svg" alt="INCART"></div>
+    <div class="logo"><img src="incart-logo-institucional.png" alt="INCART"></div>
     <div>
       <h1>Registro de Cuentas por Pagar (CxP)</h1>
       <div class="sub">Captura de facturas · resumen · exportación a Excel formato reporte</div>
     </div>
   </div>
   <div class="toolbar">
-    <label class="theme-switch" title="Cambiar tema claro/oscuro"><span>☀️</span><input type="checkbox" id="themeToggle"><span class="theme-track"></span><span>🌙</span></label>
+    <button class="theme-toggle-btn" id="themeToggleBtn" title="Cambiar tema claro/oscuro">
+      <svg viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" class="sun-icon"><circle cx="12" cy="12" r="5"></circle><line x1="12" y1="1" x2="12" y2="3"></line><line x1="12" y1="21" x2="12" y2="23"></line><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line><line x1="1" y1="12" x2="3" y2="12"></line><line x1="21" y1="12" x2="23" y2="12"></line><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line></svg>
+      <svg viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" class="moon-icon"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg>
+    </button>
     <div class="dropdown">
-      <button class="ghost" id="btnMenu">⚙ Ajustes ▾</button>
+      <button class="ghost" id="btnMenu">
+        <svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" stroke-width="2.2" fill="none" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
+        Ajustes
+        <svg viewBox="0 0 24 24" width="10" height="10" stroke="currentColor" stroke-width="2.5" fill="none" stroke-linecap="round" stroke-linejoin="round" style="margin-left:2px"><polyline points="6 9 12 15 18 9"></polyline></svg>
+      </button>
       <div class="menu" id="menu" hidden>
-        <button id="btnExcelFmt">⬇ Excel formato oficial</button>
-        <button id="btnExcel">⬇ Excel solo datos</button>
+        <button id="btnExcelFmt">
+          <svg viewBox="0 0 24 24" width="13" height="13" stroke="currentColor" stroke-width="2.2" fill="none" stroke-linecap="round" stroke-linejoin="round" class="menu-icon"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+          Excel formato oficial
+        </button>
+        <button id="btnExcel">
+          <svg viewBox="0 0 24 24" width="13" height="13" stroke="currentColor" stroke-width="2.2" fill="none" stroke-linecap="round" stroke-linejoin="round" class="menu-icon"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+          Excel solo datos
+        </button>
         <div class="menusep"></div>
-        <button id="btnPaste">📋 Pegar facturas desde Excel</button>
+        <button id="btnPaste">
+          <svg viewBox="0 0 24 24" width="13" height="13" stroke="currentColor" stroke-width="2.2" fill="none" stroke-linecap="round" stroke-linejoin="round" class="menu-icon"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"></path><rect x="8" y="2" width="8" height="4" rx="1" ry="1"></rect></svg>
+          Pegar facturas desde Excel
+        </button>
         <div class="menusep"></div>
         <div style="padding:6px 10px;display:flex;flex-direction:column;gap:4px">
           <span style="font-size:11px;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.3px">📅 Fecha de corte</span>
           <input type="date" id="reportDate" style="padding:4px 6px;font-size:12px;width:100%">
         </div>
         <div class="menusep"></div>
-        <button id="btnBackup">⬇ Exportar backup JSON</button>
-        <button id="btnImport">⬆ Importar backup</button>
+        <button id="btnBackup">
+          <svg viewBox="0 0 24 24" width="13" height="13" stroke="currentColor" stroke-width="2.2" fill="none" stroke-linecap="round" stroke-linejoin="round" class="menu-icon"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+          Exportar backup JSON
+        </button>
+        <button id="btnImport">
+          <svg viewBox="0 0 24 24" width="13" height="13" stroke="currentColor" stroke-width="2.2" fill="none" stroke-linecap="round" stroke-linejoin="round" class="menu-icon"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
+          Importar backup
+        </button>
         <div class="menusep"></div>
-        <button id="btnClearAll" style="color:var(--bad)">🗑 Borrar todos los datos</button>
+        <button id="btnClearAll" style="color:var(--bad)">
+          <svg viewBox="0 0 24 24" width="13" height="13" stroke="currentColor" stroke-width="2.2" fill="none" stroke-linecap="round" stroke-linejoin="round" class="menu-icon"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+          Borrar todos los datos
+        </button>
       </div>
     </div>
     <input type="file" id="fileImport" accept=".json" style="display:none">
@@ -190,12 +243,17 @@
     <span class="info" id="rangeInfo"></span>
   </div>
 
-  <div class="summary" id="kpis"></div>
-  <div class="aging" id="aging"></div>
+  <div id="kpis" class="summary"></div>
 
   <div class="tabs">
-    <button class="tab active" data-tab="datos">📋 Datos</button>
-    <button class="tab" data-tab="graficos">📊 Gráficos</button>
+    <button class="tab active" data-tab="datos">
+      <svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" stroke-width="2.2" fill="none" stroke-linecap="round" stroke-linejoin="round" class="tab-icon"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
+      Datos
+    </button>
+    <button class="tab" data-tab="graficos">
+      <svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" stroke-width="2.2" fill="none" stroke-linecap="round" stroke-linejoin="round" class="tab-icon"><line x1="18" y1="20" x2="18" y2="10"></line><line x1="12" y1="20" x2="12" y2="4"></line><line x1="6" y1="20" x2="6" y2="14"></line></svg>
+      Gráficos
+    </button>
   </div>
 
   <div id="tabDatos" class="tabpanel">
@@ -321,7 +379,7 @@
   <div id="tabGraficos" class="tabpanel" hidden>
     <div class="card" id="dashCard">
       <h2>Panel de análisis (balance pendiente)</h2>
-      <div id="kpis2" class="summary" style="margin-bottom:14px"></div>
+      <div id="kpis2" class="metrics-bar"></div>
       <div class="charts">
         <div class="chartbox"><h3>Antigüedad de la deuda (aging)</h3><div class="chartwrap"><canvas id="chAging"></canvas></div></div>
         <div class="chartbox"><h3>Deuda por año</h3><div class="chartwrap"><canvas id="chYear"></canvas></div></div>
@@ -592,6 +650,10 @@ function renderKpis(){
   const totBal=cache.reduce((s,f)=>s+f._balance,0);
   const pend=cache.filter(f=>f._balance>0.005);
   const avg=nTot?totFact/nTot:0;
+  
+  // Porcentaje pagado para la barra de progreso
+  const pctPaid=totFact?Math.round((totPag/totFact)*100):0;
+  
   // factura más costosa
   const maxInv=cache.reduce((mx,f)=>f._total>mx._total?f:mx,{_total:0,suplidor:"—"});
   // velocidad de pago (promedio de días entre emisión y pago, solo facturas pagadas)
@@ -601,28 +663,69 @@ function renderKpis(){
     return s+(emi&&pag?Math.max(0,(pag-emi)/86400000):0);
   },0)/paid.length):null;
 
-  $("kpis").innerHTML=`
-    <div class="kpi"><div class="lbl">Facturas</div><div class="val">${nTot}</div></div>
-    <div class="kpi"><div class="lbl">Total facturado</div><div class="val">${money(totFact)}</div></div>
-    <div class="kpi pag"><div class="lbl">Pagado</div><div class="val">${money(totPag)}</div></div>
-    <div class="kpi bal"><div class="lbl">Balance pendiente</div><div class="val">${money(totBal)}</div></div>
-    <div class="kpi"><div class="lbl">Pendientes</div><div class="val">${pend.length}</div></div>
-    <div class="kpi"><div class="lbl">Promedio por factura</div><div class="val">${money(avg)}</div></div>`;
-
-  // KPIs secundarios en panel de gráficos
-  const kpis2=$("kpis2");
-  if(kpis2) kpis2.innerHTML=`
-    <div class="kpi"><div class="lbl">Promedio por factura</div><div class="val">${money(avg)}</div></div>
-    <div class="kpi"><div class="lbl">Factura más costosa</div><div class="val">${money(maxInv._total)}</div><div style="font-size:11px;color:var(--muted);margin-top:2px">${esc(maxInv.suplidor).slice(0,30)}</div></div>
-    <div class="kpi"><div class="lbl">Velocidad de pago</div><div class="val">${avgDaysPay!=null?avgDaysPay+" días":"—"}</div><div style="font-size:11px;color:var(--muted);margin-top:2px">${paid.length} factura(s) pagada(s)</div></div>
-    <div class="kpi bal"><div class="lbl">Balance pendiente</div><div class="val">${money(totBal)}</div></div>
-    <div class="kpi"><div class="lbl">Suplidores únicos</div><div class="val">${new Set(cache.map(f=>f.suplidor)).size}</div></div>`;
-
   // aging over pending
   const buckets={"0-30":0,"31-60":0,"61-90":0,"91-364":0,"365 O MAS":0};
   pend.forEach(f=>{if(buckets[f._aging]!=null)buckets[f._aging]+=f._balance;});
-  $("aging").innerHTML=Object.entries(buckets).map(([k,v])=>
-    `<div class="chip">${k}: <b>${money(v)}</b></div>`).join("");
+
+  const agingHTML=Object.entries(buckets).map(([k,v])=>{
+    const isActive=v>0.005;
+    return `<div class="aging-chip${isActive?' active':''}">${k}: <b>${money(v)}</b></div>`;
+  }).join("");
+
+  $("kpis").innerHTML=`
+    <div class="kpi-hero">
+      <div>
+        <div class="lbl">Balance Pendiente</div>
+        <div class="val">RD$ ${money(totBal)}</div>
+      </div>
+      <div>
+        <div class="progress-wrap" title="Progreso de saldo: ${pctPaid}% pagado">
+          <div class="progress-bar" style="width: ${pctPaid}%"></div>
+        </div>
+        <div class="subtext"><b>${pctPaid}% pagado</b> de la deuda total facturada.</div>
+      </div>
+    </div>
+    <div>
+      <div class="kpi-grid">
+        <div class="kpi"><div class="lbl">Total facturado</div><div class="val">RD$ ${money(totFact)}</div></div>
+        <div class="kpi pag"><div class="lbl">Total pagado</div><div class="val">RD$ ${money(totPag)}</div></div>
+        <div class="kpi"><div class="lbl">Costo promedio</div><div class="val">RD$ ${money(avg)}</div></div>
+        <div class="kpi"><div class="lbl">Facturas (Pend.)</div><div class="val">${nTot} <span style="font-size:11px;color:var(--muted)">(${pend.length} p)</span></div></div>
+      </div>
+      <div class="aging-panel">
+        <span class="title">⏳ Desglose de Aging:</span>
+        <div class="aging-chips">${agingHTML}</div>
+      </div>
+    </div>`;
+
+  // KPIs secundarios en panel de gráficos (Horizontal metrics-bar)
+  const kpis2=$("kpis2");
+  if(kpis2) kpis2.innerHTML=`
+    <div class="metric-item">
+      <div class="lbl">Balance pendiente</div>
+      <div class="val highlight">RD$ ${money(totBal)}</div>
+      <div class="detail">${pend.length} facturas activas</div>
+    </div>
+    <div class="metric-item">
+      <div class="lbl">Costo promedio</div>
+      <div class="val">RD$ ${money(avg)}</div>
+      <div class="detail">Monto medio por factura</div>
+    </div>
+    <div class="metric-item">
+      <div class="lbl">Factura más costosa</div>
+      <div class="val">RD$ ${money(maxInv._total)}</div>
+      <div class="detail" title="${esc(maxInv.suplidor)}">${esc(maxInv.suplidor)}</div>
+    </div>
+    <div class="metric-item">
+      <div class="lbl">Velocidad de pago</div>
+      <div class="val">${avgDaysPay!=null?avgDaysPay+" días":"—"}</div>
+      <div class="detail">${paid.length} facturas pagadas</div>
+    </div>
+    <div class="metric-item">
+      <div class="lbl">Suplidores únicos</div>
+      <div class="val">${new Set(cache.map(f=>f.suplidor)).size}</div>
+      <div class="detail">Proveedores distintos</div>
+    </div>`;
 }
 
 function renderTable(){
@@ -1016,10 +1119,12 @@ function applyTheme(t){
   t = t==="dark"?"dark":"light";
   document.documentElement.setAttribute("data-theme",t);
   localStorage.setItem("cxp_theme",t);
-  const cb=$("themeToggle"); if(cb) cb.checked = t==="dark";
   if(cache.length) renderCharts();
 }
-$("themeToggle").addEventListener("change",e=>applyTheme(e.target.checked?"dark":"light"));
+$("themeToggleBtn").addEventListener("click",()=>{
+  const curr=document.documentElement.getAttribute("data-theme")||"light";
+  applyTheme(curr==="dark"?"light":"dark");
+});
 // menú desplegable Ajustes
 $("btnMenu").onclick=e=>{e.stopPropagation();$("menu").hidden=!$("menu").hidden;};
 $("menu").querySelectorAll("button").forEach(b=>b.addEventListener("click",()=>{$("menu").hidden=true;}));
