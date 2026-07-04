@@ -1,0 +1,932 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Registro de Cuentas por Pagar (CxP)</title>
+<script>document.documentElement.setAttribute("data-theme",localStorage.getItem("cxp_theme")||"light");</script>
+<script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/exceljs/4.4.0/exceljs.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<style>
+  :root{
+    /* Tema claro INCART (por defecto) — colores del logo institucional */
+    --bg:#eef1f4; --panel:#ffffff; --panel2:#f2f6f9; --line:#d6dee4;
+    --txt:#20323c; --muted:#5e5f5f; --accent:#34a9e4; --accent2:#005476;
+    --ok:#2e7d32; --warn:#b26a00; --bad:#c62828; --chip:#e6eef3;
+    --field:#ffffff; --hover:#eef4f8;
+    --badge-pend-bg:#fff2cc; --badge-pend-tx:#7a5600;
+    --badge-paid-bg:#d7f0dd; --badge-paid-tx:#1b5e20;
+    --link:#005476;  /* texto de marca legible sobre fondo claro */
+    color-scheme:light;
+  }
+  [data-theme="dark"]{
+    /* Modo oscuro (paleta original) */
+    --bg:#0f172a; --panel:#1e293b; --panel2:#273449; --line:#334155;
+    --txt:#e2e8f0; --muted:#94a3b8; --accent:#38bdf8; --accent2:#0ea5e9;
+    --ok:#22c55e; --warn:#f59e0b; --bad:#ef4444; --chip:#334155;
+    --field:#0b1220; --hover:#1b2740;
+    --badge-pend-bg:#422006; --badge-pend-tx:#fcd34d;
+    --badge-paid-bg:#052e16; --badge-paid-tx:#4ade80;
+    --link:#7cc6ef;  /* celeste claro, legible sobre fondo oscuro */
+    color-scheme:dark;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;font-family:"Segoe UI",Arial,sans-serif;background:var(--bg);color:var(--txt);font-size:14px}
+  header{background:linear-gradient(90deg,var(--accent2),var(--accent));color:#fff;padding:14px 20px;display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap}
+  .brand{display:flex;align-items:center;gap:14px}
+  .logo{background:#fff;padding:6px 12px;border-radius:8px;display:flex;align-items:center;box-shadow:0 1px 4px rgba(0,0,0,.15)}
+  .logo img{height:34px;width:auto;display:block}
+  header h1{margin:0;font-size:18px;letter-spacing:.3px}
+  header .sub{font-size:12px;opacity:.85}
+  .toolbar{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+  .toolbar label{font-size:12px;color:#e0f2fe}
+  button{cursor:pointer;border:none;border-radius:6px;padding:8px 12px;font-size:13px;font-weight:600;background:var(--panel2);color:var(--txt);transition:.15s}
+  button:hover{filter:brightness(1.15)}
+  button.primary{background:var(--accent2);color:#fff}
+  button.ok{background:var(--ok);color:#052e16}
+  button.ghost{background:transparent;border:1px solid var(--accent);color:var(--accent2)}
+  header button.ghost{border-color:#bfe3f7;color:#eaf7ff}
+  button.danger{background:transparent;color:#fca5a5;border:1px solid #7f1d1d;padding:4px 8px;font-size:12px}
+  button.mini{padding:4px 8px;font-size:12px}
+  input,select,textarea{background:var(--field);border:1px solid var(--line);color:var(--txt);border-radius:6px;padding:7px 9px;font-size:13px;width:100%;font-family:inherit}
+  input:focus,select:focus,textarea:focus{outline:none;border-color:var(--accent)}
+  main{display:block;padding:16px}
+  .datosgrid{display:grid;grid-template-columns:360px 1fr;gap:16px;align-items:start}
+  .tabs{display:flex;gap:6px;margin-bottom:14px;border-bottom:1px solid var(--line)}
+  .tab{background:transparent;color:var(--muted);border-radius:8px 8px 0 0;padding:10px 22px;font-weight:600;border:1px solid transparent;border-bottom:none;font-size:14px}
+  .tab:hover{color:var(--txt)}
+  .tab.active{color:var(--link);background:var(--panel);border-color:var(--line);border-bottom:2px solid var(--accent2)}
+  .dropdown{position:relative;display:inline-block}
+  .menu{position:absolute;right:0;top:115%;background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:6px;min-width:200px;box-shadow:0 10px 26px rgba(0,0,0,.55);z-index:20;display:flex;flex-direction:column;gap:4px}
+  .menu button{background:transparent;text-align:left;width:100%;color:var(--txt)}
+  .menu button:hover{background:var(--panel2)}
+  .menu[hidden]{display:none}
+  .menusep{height:1px;background:var(--line);margin:4px 2px}
+  .filterbar{display:flex;align-items:center;gap:14px;flex-wrap:wrap;background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:10px 14px;margin-bottom:14px}
+  .filterbar .fl{font-size:12.5px;font-weight:700;color:var(--link)}
+  .filterbar label{font-size:12px;color:var(--muted);display:flex;align-items:center;gap:6px}
+  .filterbar input[type=date]{width:150px}
+  .filterbar .info{color:var(--muted);font-weight:400;font-size:12px}
+  .modal{position:fixed;inset:0;background:rgba(0,0,0,.55);display:flex;align-items:center;justify-content:center;z-index:100;padding:20px}
+  .modal[hidden]{display:none}
+  .modalbox{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:22px;width:min(760px,100%);max-height:90vh;overflow:auto;box-shadow:0 20px 60px rgba(0,0,0,.5)}
+  .modalbox h2{margin:0 0 8px;color:var(--link);font-size:17px}
+  .modalbox textarea{width:100%;font-family:ui-monospace,Consolas,monospace;font-size:12px;min-height:150px}
+  .cols{font-size:11.5px;color:var(--muted);background:var(--panel2);border:1px solid var(--line);border-radius:6px;padding:8px 10px;margin:8px 0;line-height:1.6}
+  .pasteresult{margin-top:12px;font-size:12.5px}
+  .pasteresult .ok{color:var(--ok);font-weight:700}
+  .pasteresult .warn{color:var(--warn);font-weight:700;margin-top:8px}
+  .pasteresult .bad{color:var(--bad);font-weight:700;margin-top:8px}
+  .pasteresult ul{margin:4px 0 0;padding-left:18px;color:var(--muted)}
+  .pasteresult li{margin-bottom:2px}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:16px}
+  .card h2{margin:0 0 12px;font-size:15px;text-transform:uppercase;letter-spacing:.5px;color:var(--link);font-weight:700}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  .field{margin-bottom:10px}
+  .field label{display:block;font-size:12px;color:var(--muted);margin-bottom:3px}
+  .field .req{color:var(--bad)}
+  .summary{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px;margin-bottom:16px}
+  .kpi{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:14px}
+  .kpi .lbl{font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px}
+  .kpi .val{font-size:22px;font-weight:700;margin-top:4px}
+  .kpi.bal .val{color:var(--warn)}
+  .kpi.pag .val{color:var(--ok)}
+  .aging{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:16px}
+  .aging .chip{background:var(--chip);border:1px solid var(--line);border-radius:20px;padding:6px 13px;font-size:13px}
+  .aging .chip b{color:var(--link)}
+  .charts{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:6px}
+  .chartbox{background:var(--panel2);border:1px solid var(--line);border-radius:8px;padding:12px}
+  .chartbox h3{margin:0 0 8px;font-size:12px;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.3px}
+  .chartwrap{position:relative;height:220px}
+  @media(max-width:760px){.charts{grid-template-columns:1fr}}
+  .tablewrap{overflow:auto;max-height:60vh;border:1px solid var(--line);border-radius:10px}
+  table{border-collapse:collapse;width:100%;font-size:13px}
+  th,td{padding:6px 8px;text-align:left;white-space:nowrap;border-bottom:1px solid var(--line)}
+  .tablewrap td:nth-child(2){white-space:normal;min-width:150px;max-width:230px;line-height:1.3}
+  th{position:sticky;top:0;background:var(--panel2);z-index:1;font-size:12px;text-transform:uppercase;letter-spacing:.3px;font-weight:700}
+  tbody tr:hover{background:var(--hover)}
+  .num{text-align:right;font-variant-numeric:tabular-nums}
+  .badge{padding:2px 8px;border-radius:20px;font-size:11px;font-weight:600}
+  .badge.pend{background:var(--badge-pend-bg);color:var(--badge-pend-tx)}
+  .badge.paid{background:var(--badge-paid-bg);color:var(--badge-paid-tx)}
+  .empty{padding:40px;text-align:center;color:var(--muted)}
+  .searchbar{display:flex;gap:8px;margin-bottom:12px;align-items:center;flex-wrap:wrap}
+  .searchbar input{max-width:280px}
+  .hint{font-size:11px;color:var(--muted);margin-top:8px;line-height:1.5}
+  .help{display:inline-flex;align-items:center;justify-content:center;width:15px;height:15px;border-radius:50%;background:var(--chip);color:var(--accent2);font-size:10px;font-weight:700;margin-left:5px;cursor:help;position:relative;vertical-align:middle}
+  .help:hover{background:var(--accent2);color:#fff}
+  .help:hover::after{content:attr(data-tip);position:absolute;bottom:150%;left:50%;transform:translateX(-50%);background:#0b1220;color:#e2e8f0;border:1px solid var(--accent);padding:8px 11px;border-radius:7px;width:210px;font-size:11.5px;font-weight:400;line-height:1.45;white-space:normal;text-align:left;z-index:50;box-shadow:0 8px 20px rgba(0,0,0,.55);pointer-events:none}
+  .help:hover::before{content:"";position:absolute;bottom:150%;left:50%;transform:translateX(-50%) translateY(99%);border:6px solid transparent;border-top-color:var(--accent);z-index:51;pointer-events:none}
+  .toast{position:fixed;bottom:20px;right:20px;background:var(--ok);color:#052e16;padding:12px 18px;border-radius:8px;font-weight:600;opacity:0;transform:translateY(10px);transition:.25s;pointer-events:none;z-index:10}
+  .toast.show{opacity:1;transform:translateY(0)}
+  .toast.err{background:var(--bad);color:#fff}
+  details.moreflds summary{cursor:pointer;color:var(--link);font-size:13px;font-weight:600;margin:6px 0 10px}
+  @media(max-width:1200px){.datosgrid{grid-template-columns:320px 1fr}}
+  @media(max-width:900px){.datosgrid{grid-template-columns:1fr}}
+  @media(max-width:640px){
+    main{padding:10px}
+    .card{padding:12px}
+    header{padding:12px 14px}
+    header h1{font-size:16px}
+    header .sub{display:none}
+    .logo img{height:28px}
+    .kpi{padding:12px}
+    .kpi .val{font-size:19px}
+    .filterbar{gap:8px 12px}
+    .tab{padding:9px 16px}
+  }
+</style>
+</head>
+<body>
+<header>
+  <div class="brand">
+    <div class="logo"><img src="incart-logo.svg" alt="INCART"></div>
+    <div>
+      <h1>Registro de Cuentas por Pagar (CxP)</h1>
+      <div class="sub">Captura de facturas · resumen · exportación a Excel formato reporte</div>
+    </div>
+  </div>
+  <div class="toolbar">
+    <label>Fecha de corte
+      <input type="date" id="reportDate" style="width:150px;margin-top:2px">
+    </label>
+    <button class="ghost" id="btnTheme" title="Cambiar tema claro/oscuro">🌙</button>
+    <div class="dropdown">
+      <button class="ghost" id="btnMenu">⚙ Ajustes ▾</button>
+      <div class="menu" id="menu" hidden>
+        <button id="btnExcelFmt">⬇ Excel formato oficial</button>
+        <button id="btnExcel">⬇ Excel solo datos</button>
+        <div class="menusep"></div>
+        <button id="btnPaste">📋 Pegar facturas desde Excel</button>
+        <div class="menusep"></div>
+        <button id="btnBackup">⬇ Exportar backup JSON</button>
+        <button id="btnImport">⬆ Importar backup</button>
+      </div>
+    </div>
+    <input type="file" id="fileImport" accept=".json" style="display:none">
+  </div>
+</header>
+
+<main>
+  <div class="filterbar">
+    <span class="fl">📅 Período (por fecha de emisión):</span>
+    <label>Desde <input type="date" id="fFrom"></label>
+    <label>Hasta <input type="date" id="fTo"></label>
+    <button class="ghost mini" id="btnClearRange">Limpiar</button>
+    <span class="info" id="rangeInfo"></span>
+  </div>
+
+  <div class="summary" id="kpis"></div>
+  <div class="aging" id="aging"></div>
+
+  <div class="tabs">
+    <button class="tab active" data-tab="datos">📋 Datos</button>
+    <button class="tab" data-tab="graficos">📊 Gráficos</button>
+  </div>
+
+  <div id="tabDatos" class="tabpanel">
+    <div class="datosgrid">
+      <!-- FORM -->
+      <section class="card" id="formCard">
+    <h2 id="formTitle">Nueva factura</h2>
+    <form id="invForm">
+      <input type="hidden" id="editId">
+      <div class="field">
+        <label>Suplidor <span class="req">*</span></label>
+        <input id="suplidor" required placeholder="PROVESOL PROVEEDORES DE SOLUCIONES S.R.L">
+      </div>
+      <div class="grid2">
+        <div class="field"><label>RNC / Cédula</label><input id="rnc" placeholder="1-30-98936-2"></div>
+        <div class="field"><label>MED (S/N)</label>
+          <select id="med"><option value="N">N</option><option value="S">S</option></select>
+        </div>
+      </div>
+      <div class="grid2">
+        <div class="field"><label>No. Factura / NCF <span class="req">*</span></label><input id="noFactura" required placeholder="B1500001795"></div>
+        <div class="field"><label>Cuota presupuestaria</label><input id="cuota" placeholder="N/A"></div>
+      </div>
+      <div class="grid2">
+        <div class="field"><label>Fecha emisión <span class="req">*</span></label><input type="date" id="fechaEmision" required></div>
+        <div class="field"><label>Fecha recepción</label><input type="date" id="fechaRecepcion"></div>
+      </div>
+      <div class="grid2">
+        <div class="field"><label>Valor sin ITBIS <span class="req">*</span></label><input type="number" step="0.01" id="valorSinItbis" required placeholder="137044.66"></div>
+        <div class="field"><label>ITBIS</label><input type="number" step="0.01" id="itbis" value="0" placeholder="24668.04"></div>
+      </div>
+      <div class="grid2">
+        <div class="field"><label>Valor pagado</label><input type="number" step="0.01" id="valorPagado" value="0"></div>
+        <div class="field"><label>Total (auto)</label><input id="totalPreview" disabled></div>
+      </div>
+      <div class="field"><label>Proceso de compras</label><input id="proceso" placeholder="INST.NAC DE CANCER-DAF-CD-2026-0066"></div>
+      <div class="grid2">
+        <div class="field"><label>Cuenta presupuestaria</label><input id="cuentaPresup" placeholder="234101"></div>
+        <div class="field"><label>Año de la deuda (auto)</label><input id="anioDeuda" placeholder="2026"></div>
+      </div>
+      <div class="field"><label>Descripción</label><input id="descripcion" placeholder="Tarimas plásticas"></div>
+
+      <details class="moreflds">
+        <summary>Datos de la factura del proveedor (opcional)</summary>
+        <div class="grid2">
+          <div class="field"><label>Fecha vencimiento</label><input type="date" id="fechaVencimiento"></div>
+          <div class="field"><label>NCF vencimiento</label><input type="date" id="ncfVencimiento"></div>
+        </div>
+        <div class="grid2">
+          <div class="field"><label>Nro. interno factura</label><input id="nroInterno" placeholder="4869"></div>
+          <div class="field"><label>Código cliente</label><input id="codigoCliente" placeholder="CLIT2398"></div>
+        </div>
+        <div class="grid2">
+          <div class="field"><label>Vendedor</label><input id="vendedor" placeholder="PADILLA"></div>
+          <div class="field"><label>Condiciones</label><input id="condiciones" placeholder="30 Días"></div>
+        </div>
+        <div class="grid2">
+          <div class="field"><label>Envío</label><input id="envio" placeholder="Entrega"></div>
+          <div class="field"><label>Código producto</label><input id="codigoProducto" placeholder="4185654"></div>
+        </div>
+        <div class="grid2">
+          <div class="field"><label>Cantidad</label><input type="number" step="0.01" id="cantidad" placeholder="25"></div>
+          <div class="field"><label>Precio unitario</label><input type="number" step="0.01" id="precioUnitario" placeholder="5481.78"></div>
+        </div>
+      </details>
+
+      <details class="moreflds">
+        <summary>Campos adicionales (orden, contrato, pago…)</summary>
+        <div class="grid2">
+          <div class="field"><label>Orden según portal</label><input id="ordenPortal" placeholder="OC-2026-00032"></div>
+          <div class="field"><label>No. certificado contrato</label><input id="certContrato" placeholder="N/A"></div>
+        </div>
+        <div class="grid2">
+          <div class="field"><label>Vigencia contrato</label><input type="date" id="vigenciaContrato"></div>
+          <div class="field"><label>Valor orden compra</label><input type="number" step="0.01" id="valorOC"></div>
+        </div>
+        <div class="grid2">
+          <div class="field"><label># Solicitud</label><input id="solicitud"></div>
+          <div class="field"><label>CK / Libramiento</label><input id="ckLibramiento"></div>
+        </div>
+        <div class="grid2">
+          <div class="field"><label>Fecha del libramiento</label><input type="date" id="fechaLibramiento"></div>
+          <div class="field"><label>Fecha del pago</label><input type="date" id="fechaPago"></div>
+        </div>
+        <div class="field"><label>Detalle / comentarios</label><textarea id="detalle" rows="2"></textarea></div>
+      </details>
+
+      <div style="display:flex;gap:8px;margin-top:6px">
+        <button type="submit" class="primary" id="btnSave" style="flex:1">Guardar factura</button>
+        <button type="button" class="ghost" id="btnCancel" style="display:none">Cancelar</button>
+      </div>
+      <div class="hint">Los datos se guardan <b>solo en este navegador</b> (IndexedDB). Usá <b>Backup JSON</b> para no perderlos y moverlos entre equipos.</div>
+    </form>
+      </section>
+
+      <section>
+        <div class="card">
+          <div class="searchbar">
+        <h2 style="margin:0;flex:1">Facturas registradas (<span id="count">0</span>)</h2>
+        <input id="search" placeholder="Buscar suplidor, factura, proceso…">
+        <select id="filterEstado" style="width:auto">
+          <option value="">Todas</option>
+          <option value="pend">Pendientes</option>
+          <option value="paid">Saldadas</option>
+        </select>
+      </div>
+      <div class="tablewrap">
+        <table>
+          <thead>
+            <tr>
+              <th>#</th><th>Suplidor</th><th>Factura</th><th>Emisión</th><th class="num">Días</th><th>Aging</th>
+              <th class="num">Sin ITBIS</th><th class="num">ITBIS</th><th class="num">Total</th><th class="num">Pagado</th><th class="num">Balance</th><th>Estado</th><th></th>
+            </tr>
+          </thead>
+          <tbody id="tbody"></tbody>
+        </table>
+          </div>
+        </div>
+      </section>
+    </div>
+  </div>
+
+  <div id="tabGraficos" class="tabpanel" hidden>
+    <div class="card" id="dashCard">
+      <h2>Panel de análisis (balance pendiente)</h2>
+      <div class="charts">
+        <div class="chartbox"><h3>Antigüedad de la deuda (aging)</h3><div class="chartwrap"><canvas id="chAging"></canvas></div></div>
+        <div class="chartbox"><h3>Deuda por año</h3><div class="chartwrap"><canvas id="chYear"></canvas></div></div>
+        <div class="chartbox"><h3>Top 10 suplidores</h3><div class="chartwrap"><canvas id="chSup"></canvas></div></div>
+        <div class="chartbox"><h3>Medicamento vs. no medicamento</h3><div class="chartwrap"><canvas id="chMed"></canvas></div></div>
+      </div>
+    </div>
+  </div>
+</main>
+
+<div class="modal" id="pasteModal" hidden>
+  <div class="modalbox">
+    <h2>📋 Pegar facturas desde Excel</h2>
+    <p class="hint">Seleccioná las filas en Excel, copiálas (Ctrl+C) y pegálas acá (Ctrl+V). Se detectan las columnas por su encabezado; si no incluís encabezados, se usa este orden:</p>
+    <div class="cols">Suplidor &nbsp;·&nbsp; RNC/Cédula &nbsp;·&nbsp; MED (S/N) &nbsp;·&nbsp; No. Factura/NCF &nbsp;·&nbsp; Cuota &nbsp;·&nbsp; Fecha emisión &nbsp;·&nbsp; Fecha recepción &nbsp;·&nbsp; Valor sin ITBIS &nbsp;·&nbsp; ITBIS &nbsp;·&nbsp; Valor pagado &nbsp;·&nbsp; Proceso de compras &nbsp;·&nbsp; Cuenta presupuestaria &nbsp;·&nbsp; Descripción</div>
+    <textarea id="pasteArea" placeholder="Pegá acá las filas copiadas desde Excel…"></textarea>
+    <div id="pasteResult" class="pasteresult"></div>
+    <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:12px">
+      <button class="ghost" id="pasteClose">Cerrar</button>
+      <button class="primary" id="pasteRun">Procesar e importar</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ---------- IndexedDB ----------
+const DB_NAME="cxp_db", STORE="facturas";
+let db;
+function openDB(){
+  return new Promise((res,rej)=>{
+    const r=indexedDB.open(DB_NAME,1);
+    r.onupgradeneeded=e=>{const d=e.target.result; if(!d.objectStoreNames.contains(STORE)) d.createObjectStore(STORE,{keyPath:"id"});};
+    r.onsuccess=e=>{db=e.target.result;res();};
+    r.onerror=e=>rej(e.target.error);
+  });
+}
+function tx(mode){return db.transaction(STORE,mode).objectStore(STORE);}
+function getAll(){return new Promise((res,rej)=>{const r=tx("readonly").getAll();r.onsuccess=()=>res(r.result);r.onerror=()=>rej(r.error);});}
+function put(o){return new Promise((res,rej)=>{const r=tx("readwrite").put(o);r.onsuccess=()=>res();r.onerror=()=>rej(r.error);});}
+function del(id){return new Promise((res,rej)=>{const r=tx("readwrite").delete(id);r.onsuccess=()=>res();r.onerror=()=>rej(r.error);});}
+function clearAll(){return new Promise((res,rej)=>{const r=tx("readwrite").clear();r.onsuccess=()=>res();r.onerror=()=>rej(r.error);});}
+
+// ---------- helpers ----------
+const $=id=>document.getElementById(id);
+const money=n=>(n||0).toLocaleString("es-DO",{minimumFractionDigits:2,maximumFractionDigits:2});
+function toast(msg,err){const t=$("toast");t.textContent=msg;t.className="toast show"+(err?" err":"");setTimeout(()=>t.className="toast",2600);}
+function parseDate(s){if(!s)return null;const p=s.split("-");return new Date(+p[0],+p[1]-1,+p[2]);}
+function fmtDate(s){if(!s)return"";const p=s.split("-");return `${p[2]}/${p[1]}/${p[0]}`;}
+function daysBetween(a,b){if(!a||!b)return"";return Math.floor((b-a)/86400000);}
+function agingBucket(d){if(d===""||d==null)return"";if(d<=30)return"0-30";if(d<=60)return"31-60";if(d<=90)return"61-90";if(d<365)return"91 O MAS";return"365 O MAS";}
+function reportDateObj(){return parseDate($("reportDate").value)||new Date();}
+
+// derive computed fields for one record given the cut-off date
+function enrich(f){
+  const emi=parseDate(f.fechaEmision);
+  const rep=reportDateObj();
+  const dias=daysBetween(emi,rep);
+  const total=(+f.valorSinItbis||0)+(+f.itbis||0);
+  const balance=total-(+f.valorPagado||0);
+  return {...f, _total:total, _balance:balance, _dias:dias, _aging:agingBucket(dias)};
+}
+
+// aggregate analytics over pending balances (shared by charts + Excel summary sheets)
+function analytics(list){
+  const AG=["0-30","31-60","61-90","91 O MAS","365 O MAS"];
+  const aging={},agingC={},byYear={},byYearC={},bySup={},supAging={},med={S:0,N:0};
+  AG.forEach(k=>{aging[k]=0;agingC[k]=0;});
+  list.filter(f=>f._balance>0.005).forEach(f=>{
+    const b=f._balance;
+    if(aging[f._aging]!=null){aging[f._aging]+=b;agingC[f._aging]++;}
+    const y=f.anioDeuda||(f.fechaEmision||"").slice(0,4)||"(s/f)";
+    byYear[y]=(byYear[y]||0)+b; byYearC[y]=(byYearC[y]||0)+1;
+    bySup[f.suplidor]=(bySup[f.suplidor]||0)+b;
+    med[f.med==="S"?"S":"N"]+=b;
+    if(!supAging[f.suplidor]){supAging[f.suplidor]={total:0};AG.forEach(k=>supAging[f.suplidor][k]=0);}
+    if(supAging[f.suplidor][f._aging]!=null)supAging[f.suplidor][f._aging]+=b;
+    supAging[f.suplidor].total+=b;
+  });
+  const topSup=Object.entries(bySup).map(([name,sum])=>({name,sum})).sort((a,b)=>b.sum-a.sum);
+  return {AG,aging,agingC,byYear,byYearC,topSup,med,supAging};
+}
+
+// ---------- state ----------
+let allData=[];   // todas las facturas (fuente completa)
+let cache=[];     // vista filtrada por rango de fechas (la usan tabla, gráficos y export)
+
+async function refresh(){
+  allData=(await getAll()).map(enrich).sort((a,b)=>(a.fechaEmision||"").localeCompare(b.fechaEmision||""));
+  applyFilter();
+}
+
+// filtro global por rango de fecha de emisión (Desde / Hasta)
+function inRange(f){
+  const d=f.fechaEmision, from=$("fFrom").value, to=$("fTo").value;
+  if(from&&(!d||d<from))return false;
+  if(to&&(!d||d>to))return false;
+  return true;
+}
+function applyFilter(){
+  cache=allData.filter(inRange);
+  const from=$("fFrom").value, to=$("fTo").value, info=$("rangeInfo");
+  if(info){
+    info.textContent=(from||to)
+      ? `Mostrando ${cache.length} de ${allData.length} facturas`+(from?` · desde ${fmtDate(from)}`:"")+(to?` · hasta ${fmtDate(to)}`:"")
+      : `${allData.length} factura(s) · todo el período`;
+  }
+  renderKpis();
+  renderCharts();
+  renderTable();
+}
+
+// ---------- charts ----------
+let _charts={};
+function mkChart(id,cfg){const el=$(id);if(!el||typeof Chart==="undefined")return;if(_charts[id])_charts[id].destroy();_charts[id]=new Chart(el,cfg);}
+function cssVar(name,fallback){return getComputedStyle(document.documentElement).getPropertyValue(name).trim()||fallback;}
+function baseOpts(horizontal){
+  const grid=cssVar("--line","#334155");
+  return{responsive:true,maintainAspectRatio:false,
+    plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>" "+Number(c.parsed[horizontal?"x":"y"]).toLocaleString("es-DO",{maximumFractionDigits:2})}}},
+    scales:{x:{grid:{color:grid}},y:{grid:{color:grid}}}};
+}
+function renderCharts(){
+  if(typeof Chart==="undefined")return;
+  Chart.defaults.color=cssVar("--muted","#94a3b8");
+  const a=analytics(cache);
+  mkChart("chAging",{type:"bar",data:{labels:a.AG,datasets:[{data:a.AG.map(k=>a.aging[k]),
+    backgroundColor:["#22c55e","#38bdf8","#facc15","#f59e0b","#ef4444"]}]},options:baseOpts()});
+  const years=Object.keys(a.byYear).sort();
+  mkChart("chYear",{type:"bar",data:{labels:years,datasets:[{data:years.map(y=>a.byYear[y]),
+    backgroundColor:"#38bdf8"}]},options:baseOpts()});
+  const top=a.topSup.slice(0,10);
+  mkChart("chSup",{type:"bar",data:{labels:top.map(s=>s.name.length>24?s.name.slice(0,24)+"…":s.name),
+    datasets:[{data:top.map(s=>s.sum),backgroundColor:"#0ea5e9"}]},options:{...baseOpts(true),indexAxis:"y"}});
+  mkChart("chMed",{type:"doughnut",data:{labels:["Medicamento (S)","No medicamento (N)"],
+    datasets:[{data:[a.med.S,a.med.N],backgroundColor:["#22c55e","#64748b"]}]},
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:"bottom"},
+    tooltip:{callbacks:{label:c=>" "+c.label+": "+Number(c.parsed).toLocaleString("es-DO",{maximumFractionDigits:2})}}}}});
+}
+
+function renderKpis(){
+  const nTot=cache.length;
+  const totFact=cache.reduce((s,f)=>s+f._total,0);
+  const totPag=cache.reduce((s,f)=>s+(+f.valorPagado||0),0);
+  const totBal=cache.reduce((s,f)=>s+f._balance,0);
+  const pend=cache.filter(f=>f._balance>0.005);
+  $("kpis").innerHTML=`
+    <div class="kpi"><div class="lbl">Facturas</div><div class="val">${nTot}</div></div>
+    <div class="kpi"><div class="lbl">Total facturado</div><div class="val">${money(totFact)}</div></div>
+    <div class="kpi pag"><div class="lbl">Pagado</div><div class="val">${money(totPag)}</div></div>
+    <div class="kpi bal"><div class="lbl">Balance pendiente</div><div class="val">${money(totBal)}</div></div>
+    <div class="kpi"><div class="lbl">Pendientes</div><div class="val">${pend.length}</div></div>`;
+  // aging over pending
+  const buckets={"0-30":0,"31-60":0,"61-90":0,"91 O MAS":0,"365 O MAS":0};
+  pend.forEach(f=>{if(buckets[f._aging]!=null)buckets[f._aging]+=f._balance;});
+  $("aging").innerHTML=Object.entries(buckets).map(([k,v])=>
+    `<div class="chip">${k}: <b>${money(v)}</b></div>`).join("");
+}
+
+function renderTable(){
+  const q=$("search").value.toLowerCase().trim();
+  const est=$("filterEstado").value;
+  let rows=cache.filter(f=>{
+    const pendMatch = est===""|| (est==="pend"?f._balance>0.005:f._balance<=0.005);
+    const txt=(f.suplidor+" "+f.noFactura+" "+(f.proceso||"")).toLowerCase();
+    return pendMatch && (!q||txt.includes(q));
+  });
+  $("count").textContent=rows.length;
+  const tb=$("tbody");
+  if(!rows.length){tb.innerHTML=`<tr><td colspan="13" class="empty">No hay facturas. Cargá la primera desde el formulario.</td></tr>`;return;}
+  tb.innerHTML=rows.map((f,i)=>{
+    const pend=f._balance>0.005;
+    return `<tr>
+      <td>${i+1}</td>
+      <td>${esc(f.suplidor)}</td>
+      <td>${esc(f.noFactura)}</td>
+      <td>${fmtDate(f.fechaEmision)}</td>
+      <td class="num">${f._dias}</td>
+      <td>${f._aging}</td>
+      <td class="num">${money(f.valorSinItbis)}</td>
+      <td class="num">${money(f.itbis)}</td>
+      <td class="num">${money(f._total)}</td>
+      <td class="num">${money(f.valorPagado)}</td>
+      <td class="num">${money(f._balance)}</td>
+      <td><span class="badge ${pend?'pend':'paid'}">${pend?'Pendiente':'Saldada'}</span></td>
+      <td style="text-align:right">
+        <button class="mini ghost" onclick="editRec('${f.id}')">✎</button>
+        <button class="danger" onclick="removeRec('${f.id}')">✕</button>
+      </td>
+    </tr>`;
+  }).join("");
+}
+function esc(s){return String(s||"").replace(/[&<>]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;"}[c]));}
+
+// ---------- form ----------
+const FIELDS=["suplidor","rnc","med","noFactura","cuota","fechaEmision","fechaRecepcion",
+  "valorSinItbis","itbis","valorPagado","proceso","cuentaPresup","anioDeuda","descripcion",
+  "ordenPortal","certContrato","vigenciaContrato","valorOC","solicitud","ckLibramiento",
+  "fechaLibramiento","fechaPago","detalle",
+  // opcionales: datos propios de la factura del proveedor (no van al reporte CxP)
+  "fechaVencimiento","ncfVencimiento","nroInterno","codigoCliente","vendedor",
+  "condiciones","envio","codigoProducto","cantidad","precioUnitario"];
+
+function readForm(){
+  const o={};FIELDS.forEach(k=>o[k]=$(k).value.trim?$(k).value.trim():$(k).value);
+  o.id=$("editId").value||("f_"+Date.now()+"_"+Math.floor(Math.random()*1e4));
+  if(!o.anioDeuda&&o.fechaEmision)o.anioDeuda=o.fechaEmision.slice(0,4);
+  return o;
+}
+function fillForm(f){
+  FIELDS.forEach(k=>$(k).value=f[k]??"");
+  $("editId").value=f.id;
+  updTotal();
+}
+function clearForm(){
+  $("invForm").reset();$("editId").value="";$("med").value="N";
+  $("valorPagado").value="0";$("itbis").value="0";$("totalPreview").value="";
+  $("formTitle").textContent="Nueva factura";$("btnSave").textContent="Guardar factura";
+  $("btnCancel").style.display="none";
+}
+function updTotal(){
+  const t=(+$("valorSinItbis").value||0)+(+$("itbis").value||0);
+  $("totalPreview").value=t?money(t):"";
+  if(!$("anioDeuda").value&&$("fechaEmision").value)$("anioDeuda").value=$("fechaEmision").value.slice(0,4);
+}
+
+window.editRec=id=>{const f=cache.find(x=>x.id===id);if(!f)return;fillForm(f);
+  $("formTitle").textContent="Editar factura";$("btnSave").textContent="Actualizar";
+  $("btnCancel").style.display="block";window.scrollTo({top:0,behavior:"smooth"});};
+window.removeRec=async id=>{if(!confirm("¿Eliminar esta factura?"))return;await del(id);await refresh();toast("Factura eliminada");};
+
+// ---------- export a Excel (formato REGISTRO FACTURAS del CxP) ----------
+const HEADERS=["PK","SUPLIDOR","RNC / CEDULA","MED S / N","PROCESO DE COMPRAS","ORDEN SEGÚN PORTAL",
+  "NO. CERTIFICADO CONTRATO","VIGENCIA CONTRATO","VALOR ORDEN COMPRA","CUOTA PRESUPUESTARIA",
+  "No.FACTURAS","FECHA RECEPCION FACTURA","FECHA EMISION FACTURA","AÑO DE LA DEUDA","FECHA HOY",
+  "DIAS DE EMITIDA","DIAS SALDO","VALOR SIN ITBIS","ITBIS","TOTAL","VALOR PAGADO","BALANCE PENDIENTE",
+  "CUENTA PRESUPUESARIA","DESCRIPCION","DETALLE / COMENTARIOS","# SOLICITUD","CK /LIBRAMIENTO",
+  "FECHA DEL LIBRAMIENTO","FECHA DEL PAGO"];
+
+function exportExcel(){
+  if(!cache.length){toast("No hay facturas para exportar",true);return;}
+  const repStr=fmtDate($("reportDate").value);
+  const aoa=[];
+  aoa.push(["SERVICIO NACIONAL DE SALUD"]);
+  aoa.push(["Control Vencimientos de Facturas al",repStr]);
+  aoa.push([]);
+  aoa.push(HEADERS.slice());
+  cache.forEach((f,i)=>{
+    aoa.push([
+      i+1, f.suplidor, f.rnc, f.med, f.proceso, f.ordenPortal, f.certContrato,
+      fmtDate(f.vigenciaContrato), num(f.valorOC), f.cuota, f.noFactura,
+      fmtDate(f.fechaRecepcion), fmtDate(f.fechaEmision), f.anioDeuda, repStr,
+      f._dias===""?"":f._dias, f._aging, num(f.valorSinItbis), num(f.itbis),
+      num(f._total), num(f.valorPagado), num(f._balance), f.cuentaPresup, f.descripcion,
+      f.detalle, f.solicitud, f.ckLibramiento, fmtDate(f.fechaLibramiento), fmtDate(f.fechaPago)
+    ]);
+  });
+  // totals row
+  const totRow=new Array(HEADERS.length).fill("");
+  totRow[16]="TOTALES";
+  totRow[17]=cache.reduce((s,f)=>s+num(f.valorSinItbis),0);
+  totRow[18]=cache.reduce((s,f)=>s+num(f.itbis),0);
+  totRow[19]=cache.reduce((s,f)=>s+num(f._total),0);
+  totRow[20]=cache.reduce((s,f)=>s+num(f.valorPagado),0);
+  totRow[21]=cache.reduce((s,f)=>s+num(f._balance),0);
+  aoa.push([]);aoa.push(totRow);
+
+  const ws=XLSX.utils.aoa_to_sheet(aoa);
+  // number format on money columns
+  const moneyCols=[8,17,18,19,20,21];
+  const range=XLSX.utils.decode_range(ws["!ref"]);
+  for(let R=4;R<=range.e.r;R++){
+    moneyCols.forEach(C=>{
+      const cell=ws[XLSX.utils.encode_cell({r:R,c:C})];
+      if(cell&&typeof cell.v==="number"){cell.z="#,##0.00";}
+    });
+  }
+  ws["!cols"]=HEADERS.map((h,i)=>({wch: i===1?34: i===4?26: [10,23,24].includes(i)?20: h.length+4}));
+  const wb=XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb,ws,"REGISTRO FACTURAS");
+  XLSX.writeFile(wb,`Reporte CxP ${repStr.replace(/\//g,"-")}.xlsx`);
+  toast("Excel exportado ✓");
+}
+function num(v){const n=parseFloat(v);return isNaN(n)?0:n;}
+
+// ---------- export a Excel con FORMATO OFICIAL (replica visual) ----------
+async function exportExcelFormato(){
+  if(!cache.length){toast("No hay facturas para exportar",true);return;}
+  if(typeof ExcelJS==="undefined"){toast("Librería de formato no cargó (revisá tu conexión)",true);return;}
+  const repStr=fmtDate($("reportDate").value);
+  const N=HEADERS.length; // 29
+  const NAVY="FF1F4E79", HEADFILL="FF1F4E79", TOTFILL="FFDCE6F1", GRID="FFB0B0B0";
+  const thin={top:{style:"thin",color:{argb:GRID}},left:{style:"thin",color:{argb:GRID}},
+              bottom:{style:"thin",color:{argb:GRID}},right:{style:"thin",color:{argb:GRID}}};
+  const wb=new ExcelJS.Workbook();
+  wb.creator="Registro CxP"; wb.created=new Date();
+  const ws=wb.addWorksheet("REGISTRO FACTURAS",{views:[{state:"frozen",ySplit:5}]});
+  ws.columns=HEADERS.map((h,i)=>({width: i===1?34: i===4?26: [23,24].includes(i)?22: i===10?18: Math.max(9,h.length+1)}));
+
+  // Fila 1: título
+  ws.mergeCells(1,1,1,N);
+  const t=ws.getCell(1,1); t.value="SERVICIO NACIONAL DE SALUD";
+  t.font={bold:true,size:16,color:{argb:NAVY}}; t.alignment={horizontal:"center",vertical:"middle"};
+  ws.getRow(1).height=24;
+  // Fila 2: subtítulo control de vencimientos
+  ws.mergeCells(2,1,2,N);
+  const s=ws.getCell(2,1); s.value="Control Vencimientos de Facturas al "+repStr;
+  s.font={bold:true,size:11,italic:true}; s.alignment={horizontal:"center"};
+  ws.getRow(2).height=18;
+  // Fila 3: en blanco. Fila 4: encabezados
+  const hr=ws.getRow(4); hr.height=34;
+  HEADERS.forEach((h,i)=>{
+    const c=hr.getCell(i+1); c.value=h;
+    c.font={bold:true,size:9,color:{argb:"FFFFFFFF"}};
+    c.fill={type:"pattern",pattern:"solid",fgColor:{argb:HEADFILL}};
+    c.alignment={horizontal:"center",vertical:"middle",wrapText:true};
+    c.border=thin;
+  });
+
+  const MONEY=[8,17,18,19,20,21], CENTER=[0,3,13,14,15,16];
+  let r=5;
+  cache.forEach((f,i)=>{
+    const vals=[i+1,f.suplidor,f.rnc,f.med,f.proceso,f.ordenPortal,f.certContrato,
+      fmtDate(f.vigenciaContrato),num(f.valorOC),f.cuota,f.noFactura,fmtDate(f.fechaRecepcion),
+      fmtDate(f.fechaEmision),f.anioDeuda,repStr,f._dias===""?"":f._dias,f._aging,
+      num(f.valorSinItbis),num(f.itbis),num(f._total),num(f.valorPagado),num(f._balance),
+      f.cuentaPresup,f.descripcion,f.detalle,f.solicitud,f.ckLibramiento,
+      fmtDate(f.fechaLibramiento),fmtDate(f.fechaPago)];
+    const row=ws.getRow(r);
+    vals.forEach((v,ci)=>{
+      const c=row.getCell(ci+1); c.value=v; c.border=thin; c.font={size:9};
+      if(MONEY.includes(ci)){c.numFmt="#,##0.00"; c.alignment={horizontal:"right"};}
+      else if(CENTER.includes(ci)) c.alignment={horizontal:"center"};
+      else c.alignment={horizontal:"left",wrapText:false};
+    });
+    if(f._balance>0.005) row.getCell(22).font={size:9,bold:true,color:{argb:"FFC00000"}};
+    r++;
+  });
+
+  // Fila de TOTALES
+  const tot=ws.getRow(r);
+  const tl=tot.getCell(17); tl.value="TOTALES"; tl.font={bold:true,size:10}; tl.alignment={horizontal:"right"};
+  const sums={18:"valorSinItbis",19:"itbis",20:"_total",21:"valorPagado",22:"_balance"};
+  for(const col in sums){
+    const key=sums[col], sum=cache.reduce((a,f)=>a+num(f[key]),0);
+    const c=tot.getCell(+col); c.value=sum; c.numFmt="#,##0.00";
+    c.font={bold:true,size:10}; c.alignment={horizontal:"right"};
+  }
+  for(let cc=17;cc<=22;cc++){const c=tot.getCell(cc); c.border=thin;
+    c.fill={type:"pattern",pattern:"solid",fgColor:{argb:TOTFILL}};}
+
+  // ===== Hojas de resumen (analítica) =====
+  const A=analytics(cache);
+  function buildSummary(sheetName,title,headers,rows,moneyIdx,totLabel){
+    const ws2=wb.addWorksheet(sheetName);
+    const n=headers.length;
+    ws2.mergeCells(1,1,1,n);
+    const t=ws2.getCell(1,1); t.value=title; t.font={bold:true,size:13,color:{argb:NAVY}}; t.alignment={horizontal:"center"};
+    ws2.getRow(1).height=22;
+    const hr=ws2.getRow(3);
+    headers.forEach((h,i)=>{const c=hr.getCell(i+1);c.value=h;c.font={bold:true,size:10,color:{argb:"FFFFFFFF"}};
+      c.fill={type:"pattern",pattern:"solid",fgColor:{argb:HEADFILL}};c.alignment={horizontal:"center",vertical:"middle",wrapText:true};c.border=thin;});
+    ws2.getColumn(1).width=38; for(let i=2;i<=n;i++) ws2.getColumn(i).width=16;
+    let r=4;
+    rows.forEach(rw=>{const row=ws2.getRow(r);
+      rw.forEach((v,ci)=>{const c=row.getCell(ci+1);c.value=v;c.border=thin;c.font={size:9};
+        if(moneyIdx.includes(ci)){c.numFmt="#,##0.00";c.alignment={horizontal:"right"};}
+        else c.alignment={horizontal:ci===0?"left":"center"};});
+      r++;});
+    const tot=ws2.getRow(r);
+    tot.getCell(1).value=totLabel; tot.getCell(1).font={bold:true,size:10};
+    for(let ci=1;ci<n;ci++){const c=tot.getCell(ci+1);
+      if(moneyIdx.includes(ci)||headers[ci].startsWith("#")){c.value=rows.reduce((s,rw)=>s+num(rw[ci]),0);
+        c.numFmt=moneyIdx.includes(ci)?"#,##0.00":"#,##0";c.alignment={horizontal:moneyIdx.includes(ci)?"right":"center"};}
+      c.font={bold:true,size:10};}
+    for(let ci=1;ci<=n;ci++){const c=tot.getCell(ci);c.border=thin;c.fill={type:"pattern",pattern:"solid",fgColor:{argb:TOTFILL}};}
+  }
+  buildSummary("AGING POR SUPLIDOR","AGING DEL BALANCE PENDIENTE POR SUPLIDOR AL "+repStr,
+    ["SUPLIDOR",...A.AG,"TOTAL GENERAL"],
+    Object.entries(A.supAging).sort((x,y)=>y[1].total-x[1].total)
+      .map(([name,o])=>[name,o["0-30"],o["31-60"],o["61-90"],o["91 O MAS"],o["365 O MAS"],o.total]),
+    [1,2,3,4,5,6],"TOTALES");
+  const years=Object.keys(A.byYear).sort();
+  buildSummary("DEUDA POR AÑO","DEUDA POR AÑO (BALANCE PENDIENTE) AL "+repStr,
+    ["AÑO DE LA DEUDA","BALANCE PENDIENTE","# FACTURAS"],
+    years.map(y=>[y,A.byYear[y],A.byYearC[y]]),[1],"TOTAL GENERAL");
+
+  const buf=await wb.xlsx.writeBuffer();
+  const blob=new Blob([buf],{type:"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"});
+  const a=document.createElement("a"); a.href=URL.createObjectURL(blob);
+  a.download=`Reporte CxP (formato oficial) ${repStr.replace(/\//g,"-")}.xlsx`; a.click();
+  toast("Excel con formato oficial exportado ✓");
+}
+
+// ---------- backup JSON ----------
+async function backup(){
+  const data=await getAll();
+  const blob=new Blob([JSON.stringify({version:1,exported:new Date().toISOString(),facturas:data},null,2)],{type:"application/json"});
+  const a=document.createElement("a");a.href=URL.createObjectURL(blob);
+  a.download=`backup-cxp-${new Date().toISOString().slice(0,10)}.json`;a.click();
+  toast("Backup descargado ✓");
+}
+function importBackup(file){
+  const rd=new FileReader();
+  rd.onload=async e=>{
+    try{
+      const j=JSON.parse(e.target.result);
+      const arr=Array.isArray(j)?j:j.facturas;
+      if(!Array.isArray(arr))throw new Error("formato inválido");
+      if(cache.length&&!confirm(`Importar ${arr.length} facturas. ¿Reemplazar las actuales? (Aceptar=reemplaza, Cancelar=fusiona)`)){
+        for(const f of arr)await put(f);
+      }else{
+        await clearAll();for(const f of arr)await put(f);
+      }
+      await refresh();toast(`Importadas ${arr.length} facturas ✓`);
+    }catch(err){toast("Error al importar: "+err.message,true);}
+  };
+  rd.readAsText(file);
+}
+
+// ---------- wire up ----------
+// ---------- detección de duplicados (clave: No. Factura / NCF) ----------
+function invKey(f){
+  const ncf=String(f.noFactura||"").trim().toUpperCase().replace(/\s+/g,"");
+  const rnc=String(f.rnc||"").trim().replace(/[\s\-]/g,"");
+  return ncf ? (rnc + "|" + ncf) : "";
+}
+function findDup(key,exceptId){return key?allData.find(f=>f.id!==exceptId&&invKey(f)===key):null;}
+
+$("invForm").addEventListener("submit",async e=>{
+  e.preventDefault();
+  const o=readForm();
+  if(!$("editId").value){                 // solo al AGREGAR (no al editar)
+    const dup=findDup(invKey(o),o.id);
+    if(dup){
+      if(confirm(`Ya existe una factura con NCF "${o.noFactura}"\nSuplidor: ${dup.suplidor}\n\nAceptar = editar la existente · Cancelar = no guardar`)) editRec(dup.id);
+      return;
+    }
+  }
+  await put(o);await refresh();clearForm();toast("Factura guardada ✓");
+});
+
+// ---------- importar pegando desde Excel ----------
+// Orden REAL de las 29 columnas del reporte REGISTRO FACTURAS (null = columna calculada/ignorada)
+const F_FULL=[null,"suplidor","rnc","med","proceso","ordenPortal","certContrato","vigenciaContrato","valorOC","cuota",
+  "noFactura","fechaRecepcion","fechaEmision","anioDeuda",null,null,null,"valorSinItbis","itbis",null,"valorPagado",null,
+  "cuentaPresup","descripcion","detalle","solicitud","ckLibramiento","fechaLibramiento","fechaPago"];
+// Orden corto (set esencial) para pegados reducidos
+const F_SHORT=["suplidor","rnc","med","noFactura","cuota","fechaEmision","fechaRecepcion","valorSinItbis","itbis","valorPagado","proceso","cuentaPresup","descripcion"];
+// Orden sin PK (28 columnas: reporte oficial pero sin la columna de índice)
+const F_NOPK=["suplidor","rnc","med","proceso","ordenPortal","certContrato","vigenciaContrato","valorOC","cuota",
+  "noFactura","fechaRecepcion","fechaEmision","anioDeuda",null,null,null,"valorSinItbis","itbis",null,"valorPagado",null,
+  "cuentaPresup","descripcion","detalle","solicitud","ckLibramiento","fechaLibramiento","fechaPago"];
+const DATE_FIELDS=new Set(["fechaEmision","fechaRecepcion","vigenciaContrato","fechaLibramiento","fechaPago"]);
+const NUM_FIELDS=new Set(["valorSinItbis","itbis","valorPagado","valorOC"]);
+const PASTE_HEADERS={pk:"__ig",
+  suplidor:"suplidor",proveedor:"suplidor",rnc:"rnc",cedula:"rnc",rnccedula:"rnc",med:"med",medsn:"med",
+  procesodecompras:"proceso",proceso:"proceso",procesocompras:"proceso",
+  ordensegunportal:"ordenPortal",ordenportal:"ordenPortal",orden:"ordenPortal",
+  nocertificadocontrato:"certContrato",certificadocontrato:"certContrato",nocertificado:"certContrato",
+  vigenciacontrato:"vigenciaContrato",vigencia:"vigenciaContrato",
+  valorordencompra:"valorOC",valoroc:"valorOC",
+  cuota:"cuota",cuotapresupuestaria:"cuota",
+  nofactura:"noFactura",nofacturas:"noFactura",ncf:"noFactura",factura:"noFactura",nofacturancf:"noFactura",
+  fecharecepcionfactura:"fechaRecepcion",fecharecepcion:"fechaRecepcion",recepcion:"fechaRecepcion",
+  fechaemisionfactura:"fechaEmision",fechaemision:"fechaEmision",emision:"fechaEmision",
+  aniodeladeuda:"anioDeuda",anio:"anioDeuda",ano:"anioDeuda",
+  fechahoy:"__ig",diasdeemitida:"__ig",diasemitida:"__ig",diassaldo:"__ig",dias:"__ig",aging:"__ig",
+  valorsinitbis:"valorSinItbis",sinitbis:"valorSinItbis",base:"valorSinItbis",basegravable:"valorSinItbis",
+  itbis:"itbis",total:"__ig",valorpagado:"valorPagado",pagado:"valorPagado",balancependiente:"__ig",balance:"__ig",
+  cuentapresupuesaria:"cuentaPresup",cuentapresupuestaria:"cuentaPresup",cuenta:"cuentaPresup",descripcion:"descripcion",
+  detallecomentarios:"detalle",detalle:"detalle",comentarios:"detalle",
+  solicitud:"solicitud",nosolicitud:"solicitud",
+  cklibramiento:"ckLibramiento",cklibramiento2:"ckLibramiento",ck:"ckLibramiento",libramiento:"ckLibramiento",
+  fechadellibramiento:"fechaLibramiento",fechalibramiento:"fechaLibramiento",
+  fechadelpago:"fechaPago",fechapago:"fechaPago"};
+function normH(s){return String(s||"").toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g,"").replace(/[^a-z0-9]/g,"");}
+function parseNumP(s){if(typeof s==="number")return s;const t=String(s).replace(/\s/g,"").replace(/,/g,"").replace(/[^\d.\-]/g,"");const n=parseFloat(t);return isNaN(n)?0:n;}
+function parseDateP(s){s=String(s||"").trim();if(!s)return"";
+  if(/^\d{4}-\d{2}-\d{2}$/.test(s))return s;
+  const m=s.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})$/);
+  if(m)return `${m[3]}-${m[2].padStart(2,"0")}-${m[1].padStart(2,"0")}`;
+  if(/^\d+(\.\d+)?$/.test(s)){const n=parseFloat(s);if(n>=20000&&n<=90000)return new Date(Date.UTC(1899,11,30)+Math.round(n)*86400000).toISOString().slice(0,10);}
+  return "";}
+function processPaste(){
+  const raw=$("pasteArea").value.replace(/\r/g,"");
+  if(!raw.trim()){$("pasteResult").innerHTML='<div class="bad">Pegá algún dato primero.</div>';return;}
+  let rows=raw.split("\n").filter(l=>l.trim()!=="").map(l=>l.split("\t"));
+  let map=null;
+  const firstN=rows[0].map(normH);
+  if(firstN.filter(h=>PASTE_HEADERS[h]).length>=3){map=firstN.map(h=>PASTE_HEADERS[h]||null);rows=rows.slice(1);}
+  const added=[],dups=[],errs=[];
+  for(const cells of rows){
+    const o={};
+    const posMap = map || (cells.length >= F_FULL.length ? F_FULL : cells.length >= F_NOPK.length ? F_NOPK : F_SHORT);
+    posMap.forEach((field,i)=>{if(field && field!=="__ig")o[field]=(cells[i]||"").trim();});
+    if(!o.suplidor&&!o.noFactura)continue;
+    if(!o.noFactura){errs.push(cells.join(" | "));continue;}
+    o.med=(o.med||"N").toUpperCase().startsWith("S")?"S":"N";
+    DATE_FIELDS.forEach(k=>{if(o[k]!=null) o[k]=parseDateP(o[k]);});
+    NUM_FIELDS.forEach(k=>{if(o[k]!=null) o[k]=parseNumP(o[k]);});
+    if(!o.anioDeuda&&o.fechaEmision)o.anioDeuda=o.fechaEmision.slice(0,4);
+    const key=invKey(o);
+    const dup=findDup(key,null)||added.find(a=>invKey(a)===key);
+    if(dup){dups.push({ncf:o.noFactura,sup:o.suplidor,ex:dup.suplidor||""});continue;}
+    o.id="f_"+Date.now()+"_"+Math.floor(Math.random()*1e6)+"_"+added.length;
+    added.push(o);
+  }
+  (async()=>{
+    for(const o of added) await put(o);
+    await refresh();
+    let h=`<div class="ok">✓ ${added.length} factura(s) agregada(s) al listado.</div>`;
+    if(dups.length)h+=`<div class="warn">⚠ ${dups.length} omitida(s) por NCF duplicado — editala o eliminala en el listado:</div><ul>`+dups.map(d=>`<li><b>${esc(d.ncf)}</b> — ${esc(d.sup)} (ya existe: ${esc(d.ex)})</li>`).join("")+`</ul>`;
+    if(errs.length)h+=`<div class="bad">✕ ${errs.length} fila(s) sin No. Factura/NCF, omitida(s).</div>`;
+    $("pasteResult").innerHTML=h;
+    if(added.length)toast(`${added.length} factura(s) importada(s) ✓`);
+  })();
+}
+$("btnCancel").onclick=clearForm;
+["valorSinItbis","itbis"].forEach(id=>$(id).addEventListener("input",updTotal));
+$("fechaEmision").addEventListener("change",updTotal);
+$("search").addEventListener("input",renderTable);
+$("filterEstado").addEventListener("change",renderTable);
+$("reportDate").addEventListener("change",refresh);
+["fFrom","fTo"].forEach(id=>$(id).addEventListener("change",applyFilter));
+$("btnClearRange").onclick=()=>{$("fFrom").value="";$("fTo").value="";applyFilter();};
+$("btnExcel").onclick=exportExcel;
+$("btnExcelFmt").onclick=exportExcelFormato;
+$("btnBackup").onclick=backup;
+
+// pestañas Datos / Gráficos
+document.querySelectorAll(".tab").forEach(btn=>btn.onclick=()=>{
+  document.querySelectorAll(".tab").forEach(b=>b.classList.remove("active"));
+  btn.classList.add("active");
+  const t=btn.dataset.tab;
+  $("tabDatos").hidden = t!=="datos";
+  $("tabGraficos").hidden = t!=="graficos";
+  if(t==="graficos") setTimeout(()=>Object.values(_charts).forEach(c=>{try{c.resize();}catch(e){}}),30);
+});
+// tema claro (INCART) / oscuro
+function applyTheme(t){
+  t = t==="dark"?"dark":"light";
+  document.documentElement.setAttribute("data-theme",t);
+  localStorage.setItem("cxp_theme",t);
+  const b=$("btnTheme"); if(b) b.textContent = t==="dark"?"☀️":"🌙";
+  if(cache.length) renderCharts(); // recolorea ejes/grillas al cambiar de tema
+}
+$("btnTheme").onclick=()=>applyTheme(document.documentElement.getAttribute("data-theme")==="dark"?"light":"dark");
+// menú desplegable Ajustes
+$("btnMenu").onclick=e=>{e.stopPropagation();$("menu").hidden=!$("menu").hidden;};
+$("menu").querySelectorAll("button").forEach(b=>b.addEventListener("click",()=>{$("menu").hidden=true;}));
+document.addEventListener("click",e=>{if(!e.target.closest(".dropdown"))$("menu").hidden=true;});
+$("btnImport").onclick=()=>$("fileImport").click();
+$("fileImport").addEventListener("change",e=>{if(e.target.files[0])importBackup(e.target.files[0]);e.target.value="";});
+$("btnPaste").onclick=()=>{$("pasteArea").value="";$("pasteResult").innerHTML="";$("pasteModal").hidden=false;};
+$("pasteClose").onclick=()=>$("pasteModal").hidden=true;
+$("pasteRun").onclick=processPaste;
+
+// ---------- tooltips de ayuda por campo ----------
+const HELP={
+  reportDate:"Fecha 'hasta hoy' con la que se calculan los días de atraso y la antigüedad de cada factura.",
+  suplidor:"Nombre de la empresa que te vende o presta el servicio. Aparece arriba en la factura.",
+  rnc:"Número de identificación fiscal del suplidor (RNC o cédula).",
+  med:"¿Es un medicamento o insumo médico? Elegí S = Sí, N = No.",
+  noFactura:"Número de comprobante fiscal (NCF) o número de la factura del proveedor.",
+  cuota:"Cuota presupuestaria asignada al gasto. Si no aplica, escribí N/A.",
+  fechaEmision:"Fecha en que el proveedor emitió la factura (fecha de expedición).",
+  fechaRecepcion:"Fecha en que vos recibiste o registraste la factura.",
+  valorSinItbis:"Monto de la factura antes de impuestos (la 'base gravable').",
+  itbis:"Impuesto de la factura (ITBIS). Normalmente es el 18% de la base.",
+  valorPagado:"Cuánto ya pagaste de esta factura. Si todavía no pagaste nada, dejá 0.",
+  totalPreview:"Se calcula solo: base sin ITBIS + ITBIS. No hace falta escribirlo.",
+  proceso:"Código del proceso de compra o contrato. Suele estar en 'Observaciones' de la factura.",
+  cuentaPresup:"Cuenta contable/presupuestaria a la que se carga el gasto (ej: 234101).",
+  anioDeuda:"Año al que corresponde la deuda. Se completa solo con el año de emisión; podés cambiarlo.",
+  descripcion:"En pocas palabras, qué se compró (ej: Tarimas plásticas).",
+  ordenPortal:"Número de la orden de compra en el portal (ej: OC-2026-00032).",
+  certContrato:"Número del certificado de contrato, si la compra tiene uno.",
+  vigenciaContrato:"Hasta qué fecha está vigente el contrato.",
+  valorOC:"Monto total de la orden de compra.",
+  solicitud:"Número de la solicitud de pago.",
+  ckLibramiento:"Número de cheque o libramiento con el que se pagó.",
+  fechaLibramiento:"Fecha en que se emitió el libramiento.",
+  fechaPago:"Fecha en que efectivamente se hizo el pago.",
+  detalle:"Notas o comentarios adicionales sobre la factura.",
+  fechaVencimiento:"Fecha límite para pagar la factura sin atraso.",
+  ncfVencimiento:"Fecha de vencimiento del NCF gubernamental que asigna la DGII.",
+  nroInterno:"Número interno o correlativo que el proveedor le puso a la factura (ej: 4869).",
+  codigoCliente:"Código con el que el proveedor te identifica como cliente (ej: CLIT2398).",
+  vendedor:"Nombre del vendedor que atendió la compra.",
+  condiciones:"Condiciones de pago acordadas (ej: 30 días).",
+  envio:"Forma de entrega o envío (ej: Entrega).",
+  codigoProducto:"Código del producto tal como aparece en la factura.",
+  cantidad:"Cantidad de unidades compradas.",
+  precioUnitario:"Precio de cada unidad, antes de impuestos."
+};
+function attachHelp(){
+  for(const id in HELP){
+    const el=$(id); if(!el)continue;
+    el.title=HELP[id];
+    let lbl=null;
+    if(el.parentElement&&el.parentElement.classList.contains("field")){
+      lbl=el.parentElement.querySelector("label");
+    }else{ lbl=el.closest("label"); }
+    if(lbl&&!lbl.querySelector(".help")){
+      const s=document.createElement("span");
+      s.className="help"; s.textContent="?"; s.setAttribute("data-tip",HELP[id]);
+      lbl.appendChild(s);
+    }
+  }
+}
+
+(async function init(){
+  $("reportDate").value=new Date().toISOString().slice(0,10);
+  applyTheme(localStorage.getItem("cxp_theme")||"light");
+  attachHelp();
+  await openDB();await refresh();
+})();
+</script>
+</body>
+</html>
