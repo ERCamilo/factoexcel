@@ -162,6 +162,8 @@
         <div class="menusep"></div>
         <button id="btnBackup">⬇ Exportar backup JSON</button>
         <button id="btnImport">⬆ Importar backup</button>
+        <div class="menusep"></div>
+        <button id="btnClearAll" style="color:var(--bad)">🗑 Borrar todos los datos</button>
       </div>
     </div>
     <input type="file" id="fileImport" accept=".json" style="display:none">
@@ -870,6 +872,7 @@ $("fileImport").addEventListener("change",e=>{if(e.target.files[0])importBackup(
 $("btnPaste").onclick=()=>{$("pasteArea").value="";$("pasteResult").innerHTML="";$("pasteModal").hidden=false;};
 $("pasteClose").onclick=()=>$("pasteModal").hidden=true;
 $("pasteRun").onclick=processPaste;
+$("btnClearAll").onclick=async()=>{if(!confirm("¿Borrar TODAS las facturas? Esta acción no se puede deshacer."))return;await clearAll();await refresh();clearForm();toast("Todos los datos fueron borrados");};
 
 // ---------- tooltips de ayuda por campo ----------
 const HELP={
