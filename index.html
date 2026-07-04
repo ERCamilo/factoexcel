@@ -397,7 +397,7 @@ let allData=[];   // todas las facturas (fuente completa)
 let cache=[];     // vista filtrada por rango de fechas (la usan tabla, gráficos y export)
 
 async function refresh(){
-  allData=(await getAll()).map(enrich).sort((a,b)=>(a.fechaEmision||"").localeCompare(b.fechaEmision||""));
+  allData=(await getAll()).map(enrich).sort((a,b)=>(+a.pk||Infinity)-(+b.pk||Infinity));
   applyFilter();
 }
 
@@ -512,9 +512,11 @@ const FIELDS=["suplidor","rnc","med","noFactura","cuota","fechaEmision","fechaRe
   "fechaVencimiento","ncfVencimiento","nroInterno","codigoCliente","vendedor",
   "condiciones","envio","codigoProducto","cantidad","precioUnitario"];
 
+function nextPk(){const max=allData.reduce((m,f)=>Math.max(m,+f.pk||0),0);return max+1;}
 function readForm(){
   const o={};FIELDS.forEach(k=>o[k]=$(k).value.trim?$(k).value.trim():$(k).value);
   o.id=$("editId").value||("f_"+Date.now()+"_"+Math.floor(Math.random()*1e4));
+  if(!o.pk)o.pk=nextPk();
   if(!o.anioDeuda&&o.fechaEmision)o.anioDeuda=o.fechaEmision.slice(0,4);
   return o;
 }
@@ -753,7 +755,7 @@ $("invForm").addEventListener("submit",async e=>{
 
 // ---------- importar pegando desde Excel ----------
 // Orden REAL de las 29 columnas del reporte REGISTRO FACTURAS (null = columna calculada/ignorada)
-const F_FULL=[null,"suplidor","rnc","med","proceso","ordenPortal","certContrato","vigenciaContrato","valorOC","cuota",
+const F_FULL=["pk","suplidor","rnc","med","proceso","ordenPortal","certContrato","vigenciaContrato","valorOC","cuota",
   "noFactura","fechaRecepcion","fechaEmision","anioDeuda",null,null,null,"valorSinItbis","itbis",null,"valorPagado",null,
   "cuentaPresup","descripcion","detalle","solicitud","ckLibramiento","fechaLibramiento","fechaPago"];
 // Orden corto (set esencial) para pegados reducidos
@@ -814,6 +816,8 @@ function processPaste(){
     const key=invKey(o);
     const dup=findDup(key,null)||added.find(a=>invKey(a)===key);
     if(dup){dups.push({ncf:o.noFactura,sup:o.suplidor,ex:dup.suplidor||""});continue;}
+    if(!o.pk) o.pk = nextPk() + added.length;
+    else o.pk = +o.pk || (nextPk() + added.length);
     o.id="f_"+Date.now()+"_"+Math.floor(Math.random()*1e6)+"_"+added.length;
     added.push(o);
   }
