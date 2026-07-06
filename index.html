@@ -82,6 +82,15 @@
   .pasteresult .bad{color:var(--bad);font-weight:700;margin-top:8px}
   .pasteresult ul{margin:4px 0 0;padding-left:18px;color:var(--muted)}
   .pasteresult li{margin-bottom:2px}
+  .modalbox.lg{width:min(1000px,100%)}
+  .scanbtn{width:100%;margin-bottom:12px;font-size:14px;padding:11px}
+  .ocrgrid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:6px}
+  .ocrgrid .full{grid-column:1/-1}
+  .ocrgrid label{display:block;font-size:12px;color:var(--muted);margin-bottom:3px}
+  .ocr-loading{position:fixed;inset:0;background:rgba(0,0,0,.62);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;z-index:200;color:#fff;font-weight:600;font-size:15px}
+  .ocr-loading[hidden]{display:none}
+  .spinner{width:48px;height:48px;border:5px solid rgba(255,255,255,.3);border-top-color:#fff;border-radius:50%;animation:spin 1s linear infinite}
+  @keyframes spin{to{transform:rotate(360deg)}}
   .card{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:16px}
   .card h2{margin:0 0 12px;font-size:15px;text-transform:uppercase;letter-spacing:.5px;color:var(--link);font-weight:700}
   .grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
@@ -209,6 +218,10 @@
           <svg viewBox="0 0 24 24" width="13" height="13" stroke="currentColor" stroke-width="2.2" fill="none" stroke-linecap="round" stroke-linejoin="round" class="menu-icon"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"></path><rect x="8" y="2" width="8" height="4" rx="1" ry="1"></rect></svg>
           Pegar facturas desde Excel
         </button>
+        <button id="btnOcrCfg">
+          <svg viewBox="0 0 24 24" width="13" height="13" stroke="currentColor" stroke-width="2.2" fill="none" stroke-linecap="round" stroke-linejoin="round" class="menu-icon"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
+          Configuración OCR
+        </button>
         <div class="menusep"></div>
         <div style="padding:6px 10px;display:flex;flex-direction:column;gap:4px">
           <span style="font-size:11px;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.3px">📅 Fecha de corte</span>
@@ -261,6 +274,8 @@
       <!-- FORM -->
       <section class="card" id="formCard">
     <h2 id="formTitle">Nueva factura</h2>
+    <button type="button" class="ok scanbtn" id="btnScan">📷 Escanear factura (OCR)</button>
+    <input type="file" id="ocrFile" accept="image/*" style="display:none">
     <form id="invForm">
       <input type="hidden" id="editId">
       <div class="field">
@@ -397,6 +412,50 @@
     </div>
   </div>
 </main>
+
+<div class="ocr-loading" id="ocrLoading" hidden>
+  <div class="spinner"></div>
+  <div>Analizando factura con OCR…</div>
+</div>
+
+<div class="modal" id="ocrModal" hidden>
+  <div class="modalbox lg">
+    <h2>📷 Revisar factura escaneada</h2>
+    <p class="hint">Revisá y corregí lo que leyó el OCR antes de agregarlo. Los campos vacíos podés completarlos a mano.</p>
+    <div class="ocrgrid">
+      <div class="full"><label>Suplidor</label><input id="ocr_suplidor"></div>
+      <div><label>RNC / Cédula</label><input id="ocr_rnc"></div>
+      <div><label>MED (S/N)</label><select id="ocr_med"><option value="N">N</option><option value="S">S</option></select></div>
+      <div><label>No. Factura / NCF</label><input id="ocr_noFactura"></div>
+      <div><label>Cuenta presupuestaria</label><input id="ocr_cuentaPresup"></div>
+      <div><label>Fecha emisión</label><input type="date" id="ocr_fechaEmision"></div>
+      <div><label>Fecha recepción</label><input type="date" id="ocr_fechaRecepcion"></div>
+      <div><label>Valor sin ITBIS</label><input type="number" step="0.01" id="ocr_valorSinItbis"></div>
+      <div><label>ITBIS</label><input type="number" step="0.01" id="ocr_itbis"></div>
+      <div><label>Valor pagado</label><input type="number" step="0.01" id="ocr_valorPagado" value="0"></div>
+      <div><label>Total (auto)</label><input id="ocr_total" disabled></div>
+      <div class="full"><label>Proceso de compras</label><input id="ocr_proceso"></div>
+      <div class="full"><label>Descripción</label><input id="ocr_descripcion"></div>
+    </div>
+    <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:14px">
+      <button class="ghost" id="ocrCancel">Cancelar</button>
+      <button class="primary" id="ocrConfirm">Confirmar y agregar</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal" id="ocrCfgModal" hidden>
+  <div class="modalbox">
+    <h2>⚙ Configuración OCR</h2>
+    <p class="hint">URL del webhook de n8n y la clave (X-API-Key). Se guardan solo en este navegador.</p>
+    <div class="field"><label>URL del webhook</label><input id="cfgUrl" placeholder="https://n8n.erlin.do/webhook/cxp-ocr-factura"></div>
+    <div class="field"><label>API Key (X-API-Key)</label><input id="cfgKey" placeholder="clave compartida"></div>
+    <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:12px">
+      <button class="ghost" id="cfgClose">Cerrar</button>
+      <button class="primary" id="cfgSave">Guardar</button>
+    </div>
+  </div>
+</div>
 
 <div class="modal" id="pasteModal" hidden>
   <div class="modalbox">
@@ -1136,6 +1195,75 @@ $("pasteClose").onclick=()=>$("pasteModal").hidden=true;
 $("pasteRun").onclick=processPaste;
 $("btnClearAll").onclick=async()=>{if(!confirm("¿Borrar TODAS las facturas? Esta acción no se puede deshacer."))return;await clearAll();await refresh();clearForm();toast("Todos los datos fueron borrados");};
 
+// ---------- OCR de facturas (foto -> n8n + Gemini -> draft) ----------
+function ocrCfg(){try{return JSON.parse(localStorage.getItem("cxp_ocr_cfg"))||{};}catch(e){return{};}}
+function compressImage(file,maxDim=1500,q=0.72){
+  return new Promise((res,rej)=>{const img=new Image();
+    img.onload=()=>{let w=img.width,h=img.height;if(Math.max(w,h)>maxDim){const s=maxDim/Math.max(w,h);w=Math.round(w*s);h=Math.round(h*s);}
+      const c=document.createElement("canvas");c.width=w;c.height=h;c.getContext("2d").drawImage(img,0,0,w,h);
+      res(c.toDataURL("image/jpeg",q).split(",")[1]);};
+    img.onerror=rej;const rd=new FileReader();rd.onload=e=>img.src=e.target.result;rd.onerror=rej;rd.readAsDataURL(file);});
+}
+function mapOcr(r){
+  const d=(r&&r.data)?r.data:(r||{});
+  const pick=(...ks)=>{for(const k of ks){const v=d[k];if(v!=null&&v!=="")return v;}return "";};
+  return {suplidor:pick("suplidor","emisor"),rnc:pick("rnc","rncEmisor","rnc_emisor"),
+    noFactura:pick("noFactura","ncf"),fechaEmision:parseDateP(pick("fechaEmision","fecha")),
+    valorSinItbis:parseNumP(pick("valorSinItbis","subtotal")),itbis:parseNumP(pick("itbis")),
+    proceso:pick("proceso","procesoCompras"),cuentaPresup:pick("cuentaPresup","cuenta"),
+    descripcion:pick("descripcion","concepto"),med:String(pick("med")||"N").toUpperCase().startsWith("S")?"S":"N"};
+}
+async function handleScan(file){
+  if(!file)return;
+  const cfg=ocrCfg();
+  if(!cfg.url){toast("Configurá el webhook OCR primero (Ajustes → Configuración OCR)",true);openOcrCfg();return;}
+  $("ocrLoading").hidden=false;
+  try{
+    const b64=await compressImage(file);
+    const headers={"Content-Type":"application/json"}; if(cfg.key)headers["X-API-Key"]=cfg.key;
+    const resp=await fetch(cfg.url,{method:"POST",headers,body:JSON.stringify({imageBase64:b64})});
+    if(!resp.ok)throw new Error("HTTP "+resp.status);
+    const j=await resp.json();
+    if(j&&j.ok===false)throw new Error(j.error||"No se pudieron leer los datos");
+    openOcrReview(mapOcr(j));
+  }catch(err){toast("OCR: "+err.message,true);}
+  finally{$("ocrLoading").hidden=true;}
+}
+function openOcrReview(m){
+  ["suplidor","rnc","noFactura","proceso","cuentaPresup","descripcion"].forEach(k=>$("ocr_"+k).value=m[k]||"");
+  $("ocr_med").value=m.med||"N";
+  $("ocr_fechaEmision").value=m.fechaEmision||"";
+  $("ocr_fechaRecepcion").value="";
+  $("ocr_valorSinItbis").value=m.valorSinItbis||"";
+  $("ocr_itbis").value=m.itbis||"";
+  $("ocr_valorPagado").value="0";
+  ocrTotal();
+  $("ocrModal").hidden=false;
+}
+function ocrTotal(){const t=(+$("ocr_valorSinItbis").value||0)+(+$("ocr_itbis").value||0);$("ocr_total").value=t?money(t):"";}
+function confirmOcr(){
+  const g=id=>$("ocr_"+id).value.trim();
+  const o={suplidor:g("suplidor"),rnc:g("rnc"),noFactura:g("noFactura"),med:$("ocr_med").value,
+    fechaEmision:$("ocr_fechaEmision").value,fechaRecepcion:$("ocr_fechaRecepcion").value,
+    valorSinItbis:parseNumP(g("valorSinItbis")),itbis:parseNumP(g("itbis")),valorPagado:parseNumP(g("valorPagado")),
+    proceso:g("proceso"),cuentaPresup:g("cuentaPresup"),descripcion:g("descripcion")};
+  if(!o.suplidor||!o.noFactura){toast("Suplidor y No. Factura son obligatorios",true);return;}
+  if(!o.anioDeuda&&o.fechaEmision)o.anioDeuda=o.fechaEmision.slice(0,4);
+  const dup=findDup(invKey(o),null);
+  if(dup&&!confirm(`Ya existe una factura con NCF "${o.noFactura}" (${dup.suplidor}). ¿Agregar igual?`))return;
+  o.pk=nextPk(); o.id="f_"+Date.now()+"_"+Math.floor(Math.random()*1e6);
+  put(o).then(refresh).then(()=>{$("ocrModal").hidden=true;toast("Factura agregada desde OCR ✓");});
+}
+function openOcrCfg(){const c=ocrCfg();$("cfgUrl").value=c.url||"";$("cfgKey").value=c.key||"";$("ocrCfgModal").hidden=false;}
+$("btnScan").onclick=()=>$("ocrFile").click();
+$("ocrFile").addEventListener("change",e=>{if(e.target.files[0])handleScan(e.target.files[0]);e.target.value="";});
+$("ocrCancel").onclick=()=>$("ocrModal").hidden=true;
+$("ocrConfirm").onclick=confirmOcr;
+["ocr_valorSinItbis","ocr_itbis"].forEach(id=>$(id).addEventListener("input",ocrTotal));
+$("btnOcrCfg").onclick=openOcrCfg;
+$("cfgClose").onclick=()=>$("ocrCfgModal").hidden=true;
+$("cfgSave").onclick=()=>{localStorage.setItem("cxp_ocr_cfg",JSON.stringify({url:$("cfgUrl").value.trim(),key:$("cfgKey").value.trim()}));$("ocrCfgModal").hidden=true;toast("Configuración OCR guardada ✓");};
+
 // ---------- tooltips de ayuda por campo ----------
 const HELP={
   reportDate:"Fecha 'hasta hoy' con la que se calculan los días de atraso y la antigüedad de cada factura.",
@@ -1193,6 +1321,8 @@ function attachHelp(){
 (async function init(){
   $("reportDate").value=new Date().toISOString().slice(0,10);
   applyTheme(localStorage.getItem("cxp_theme")||"light");
+  if(!localStorage.getItem("cxp_ocr_cfg")) localStorage.setItem("cxp_ocr_cfg",JSON.stringify({url:"https://n8n.erlin.do/webhook/cxp-ocr-factura",key:"cxp_ocr_INCART_7Fk29Qm"}));
+  if(/Android|iPhone|iPad|iPod/i.test(navigator.userAgent)) $("ocrFile").setAttribute("capture","environment");
   attachHelp();
   await openDB();await refresh();
 })();
