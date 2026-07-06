@@ -500,9 +500,20 @@ const money=n=>(Number(n)||0).toLocaleString("es-DO",{minimumFractionDigits:2,ma
 function toast(msg,err){const t=$("toast");t.textContent=msg;t.className="toast show"+(err?" err":"");setTimeout(()=>t.className="toast",2600);}
 function parseDate(s){if(!s)return null;const p=s.split("-");return new Date(+p[0],+p[1]-1,+p[2]);}
 function fmtDate(s){if(!s)return"";const p=s.split("-");return `${p[2]}-${p[1]}-${p[0]}`;}
+function toDMY(iso){if(!iso)return"";const p=String(iso).split("-");return p.length===3?`${p[2]}/${p[1]}/${p[0]}`:String(iso);}
+// campos de fecha (texto dd/mm/aaaa) y de dinero (texto con coma de miles) — formato propio, no nativo
+const DATE_IDS=["fechaEmision","fechaRecepcion","vigenciaContrato","fechaLibramiento","fechaPago","ocr_fechaEmision","ocr_fechaRecepcion","reportDate","fFrom","fTo"];
+const MONEY_IDS=["valorSinItbis","itbis","valorPagado","valorOC","precioUnitario","ocr_valorSinItbis","ocr_itbis","ocr_valorPagado"];
+function maskDate(e){let v=e.target.value.replace(/\D/g,"").slice(0,8);if(v.length>=5)v=v.slice(0,2)+"/"+v.slice(2,4)+"/"+v.slice(4);else if(v.length>=3)v=v.slice(0,2)+"/"+v.slice(2);e.target.value=v;}
+function fmtMoneyBlur(e){const s=e.target.value.trim();if(s==="")return;const n=parseNumP(s);e.target.value=isNaN(n)?"":n.toLocaleString("es-DO",{minimumFractionDigits:2,maximumFractionDigits:2});}
+function fmtMoneyFocus(e){const s=e.target.value.trim();if(s==="")return;const n=parseNumP(s);e.target.value=isNaN(n)?"":String(n);}
+function setupFmtInputs(){
+  DATE_IDS.forEach(id=>{const el=$(id);if(!el)return;el.type="text";el.placeholder="dd/mm/aaaa";el.inputMode="numeric";el.maxLength=10;el.addEventListener("input",maskDate);});
+  MONEY_IDS.forEach(id=>{const el=$(id);if(!el)return;el.type="text";el.inputMode="decimal";el.addEventListener("blur",fmtMoneyBlur);el.addEventListener("focus",fmtMoneyFocus);});
+}
 function daysBetween(a,b){if(!a||!b)return"";return Math.floor((b-a)/86400000);}
 function agingBucket(d){if(d===""||d==null)return"";if(d<=30)return"0-30";if(d<=60)return"31-60";if(d<=90)return"61-90";if(d<365)return"91-364";return"365 O MAS";}
-function reportDateObj(){return parseDate($("reportDate").value)||new Date();}
+function reportDateObj(){return parseDate(parseDateP($("reportDate").value))||new Date();}
 
 // derive computed fields for one record given the cut-off date
 function enrich(f){
@@ -545,14 +556,14 @@ async function refresh(){
 
 // filtro global por rango de fecha de emisión (Desde / Hasta)
 function inRange(f){
-  const d=f.fechaEmision, from=$("fFrom").value, to=$("fTo").value;
+  const d=f.fechaEmision, from=parseDateP($("fFrom").value), to=parseDateP($("fTo").value);
   if(from&&(!d||d<from))return false;
   if(to&&(!d||d>to))return false;
   return true;
 }
 function applyFilter(){
   cache=allData.filter(inRange);
-  const from=$("fFrom").value, to=$("fTo").value, info=$("rangeInfo");
+  const from=parseDateP($("fFrom").value), to=parseDateP($("fTo").value), info=$("rangeInfo");
   if(info){
     info.textContent=(from||to)
       ? `Mostrando ${cache.length} de ${allData.length} facturas`+(from?` · desde ${fmtDate(from)}`:"")+(to?` · hasta ${fmtDate(to)}`:"")
@@ -836,10 +847,13 @@ const FIELDS=["suplidor","rnc","med","noFactura","cuota","fechaEmision","fechaRe
 
 function nextPk(){const max=allData.reduce((m,f)=>Math.max(m,+f.pk||0),0);return max+1;}
 const NUM_FORM=new Set(["valorSinItbis","itbis","valorPagado","valorOC","cantidad","precioUnitario"]);
+const MONEY_FORM=new Set(["valorSinItbis","itbis","valorPagado","valorOC","precioUnitario"]);
+const DATE_FORM=new Set(["fechaEmision","fechaRecepcion","vigenciaContrato","fechaLibramiento","fechaPago"]);
 function readForm(){
   const o={};FIELDS.forEach(k=>{
     let v=$(k).value; v=(typeof v==="string")?v.trim():v;
     if(NUM_FORM.has(k)){const n=parseFloat(String(v).replace(/,/g,""));v=isNaN(n)?"":n;}
+    else if(DATE_FORM.has(k)){v=parseDateP(v);}
     o[k]=v;
   });
   o.id=$("editId").value||("f_"+Date.now()+"_"+Math.floor(Math.random()*1e4));
@@ -848,7 +862,12 @@ function readForm(){
   return o;
 }
 function fillForm(f){
-  FIELDS.forEach(k=>$(k).value=f[k]??"");
+  FIELDS.forEach(k=>{
+    const v=f[k];
+    if(DATE_FORM.has(k))$(k).value=toDMY(v);
+    else if(MONEY_FORM.has(k))$(k).value=(v===""||v==null)?"":money(v);
+    else $(k).value=v??"";
+  });
   $("editId").value=f.id;
   updTotal();
 }
@@ -859,9 +878,10 @@ function clearForm(){
   $("btnCancel").style.display="none";
 }
 function updTotal(){
-  const t=(+$("valorSinItbis").value||0)+(+$("itbis").value||0);
+  const t=parseNumP($("valorSinItbis").value)+parseNumP($("itbis").value);
   $("totalPreview").value=t?money(t):"";
-  if(!$("anioDeuda").value&&$("fechaEmision").value)$("anioDeuda").value=$("fechaEmision").value.slice(0,4);
+  const iso=parseDateP($("fechaEmision").value);
+  if(!$("anioDeuda").value&&iso)$("anioDeuda").value=iso.slice(0,4);
 }
 
 window.editRec=id=>{const f=cache.find(x=>x.id===id);if(!f)return;fillForm(f);
@@ -1240,19 +1260,19 @@ async function handleScan(file){
 function openOcrReview(m){
   ["suplidor","rnc","noFactura","proceso","cuentaPresup","descripcion"].forEach(k=>$("ocr_"+k).value=m[k]||"");
   $("ocr_med").value=m.med||"N";
-  $("ocr_fechaEmision").value=m.fechaEmision||"";
+  $("ocr_fechaEmision").value=toDMY(m.fechaEmision);
   $("ocr_fechaRecepcion").value="";
-  $("ocr_valorSinItbis").value=m.valorSinItbis||"";
-  $("ocr_itbis").value=m.itbis||"";
+  $("ocr_valorSinItbis").value=(m.valorSinItbis===""||m.valorSinItbis==null)?"":money(m.valorSinItbis);
+  $("ocr_itbis").value=(m.itbis===""||m.itbis==null)?"":money(m.itbis);
   $("ocr_valorPagado").value="0";
   ocrTotal();
   $("ocrModal").hidden=false;
 }
-function ocrTotal(){const t=(+$("ocr_valorSinItbis").value||0)+(+$("ocr_itbis").value||0);$("ocr_total").value=t?money(t):"";}
+function ocrTotal(){const t=parseNumP($("ocr_valorSinItbis").value)+parseNumP($("ocr_itbis").value);$("ocr_total").value=t?money(t):"";}
 function confirmOcr(){
   const g=id=>$("ocr_"+id).value.trim();
   const o={suplidor:g("suplidor"),rnc:g("rnc"),noFactura:g("noFactura"),med:$("ocr_med").value,
-    fechaEmision:$("ocr_fechaEmision").value,fechaRecepcion:$("ocr_fechaRecepcion").value,
+    fechaEmision:parseDateP($("ocr_fechaEmision").value),fechaRecepcion:parseDateP($("ocr_fechaRecepcion").value),
     valorSinItbis:parseNumP(g("valorSinItbis")),itbis:parseNumP(g("itbis")),valorPagado:parseNumP(g("valorPagado")),
     proceso:g("proceso"),cuentaPresup:g("cuentaPresup"),descripcion:g("descripcion")};
   if(!o.suplidor||!o.noFactura){toast("Suplidor y No. Factura son obligatorios",true);return;}
@@ -1327,7 +1347,8 @@ function attachHelp(){
 }
 
 (async function init(){
-  $("reportDate").value=new Date().toISOString().slice(0,10);
+  setupFmtInputs();
+  $("reportDate").value=toDMY(new Date().toISOString().slice(0,10));
   applyTheme(localStorage.getItem("cxp_theme")||"light");
   if(!localStorage.getItem("cxp_ocr_cfg")) localStorage.setItem("cxp_ocr_cfg",JSON.stringify({url:"https://n8n.erlin.do/webhook/cxp-ocr-factura",key:"cxp_ocr_INCART_7Fk29Qm"}));
   if(/Android|iPhone|iPad|iPod/i.test(navigator.userAgent)) $("ocrFile").setAttribute("capture","environment");
