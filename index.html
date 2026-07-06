@@ -83,7 +83,7 @@
   .pasteresult ul{margin:4px 0 0;padding-left:18px;color:var(--muted)}
   .pasteresult li{margin-bottom:2px}
   .modalbox.lg{width:min(1000px,100%)}
-  .scanbtn{width:100%;margin-bottom:12px;font-size:14px;padding:11px}
+  button.scanbtn{width:100%;margin-bottom:12px;font-size:14px;padding:11px;color:#fff;display:flex;align-items:center;justify-content:center;gap:8px}
   .ocrgrid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:6px}
   .ocrgrid .full{grid-column:1/-1}
   .ocrgrid label{display:block;font-size:12px;color:var(--muted);margin-bottom:3px}
@@ -274,7 +274,10 @@
       <!-- FORM -->
       <section class="card" id="formCard">
     <h2 id="formTitle">Nueva factura</h2>
-    <button type="button" class="ok scanbtn" id="btnScan">📷 Escanear factura (OCR)</button>
+    <button type="button" class="ok scanbtn" id="btnScan">
+      <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2.2" fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path><circle cx="12" cy="13" r="4"></circle></svg>
+      Escanear factura (OCR)
+    </button>
     <input type="file" id="ocrFile" accept="image/*" style="display:none">
     <form id="invForm">
       <input type="hidden" id="editId">
@@ -493,10 +496,10 @@ function clearAll(){return new Promise((res,rej)=>{const r=tx("readwrite").clear
 
 // ---------- helpers ----------
 const $=id=>document.getElementById(id);
-const money=n=>(n||0).toLocaleString("es-DO",{minimumFractionDigits:2,maximumFractionDigits:2});
+const money=n=>(Number(n)||0).toLocaleString("es-DO",{minimumFractionDigits:2,maximumFractionDigits:2});
 function toast(msg,err){const t=$("toast");t.textContent=msg;t.className="toast show"+(err?" err":"");setTimeout(()=>t.className="toast",2600);}
 function parseDate(s){if(!s)return null;const p=s.split("-");return new Date(+p[0],+p[1]-1,+p[2]);}
-function fmtDate(s){if(!s)return"";const p=s.split("-");return `${p[2]}/${p[1]}/${p[0]}`;}
+function fmtDate(s){if(!s)return"";const p=s.split("-");return `${p[2]}-${p[1]}-${p[0]}`;}
 function daysBetween(a,b){if(!a||!b)return"";return Math.floor((b-a)/86400000);}
 function agingBucket(d){if(d===""||d==null)return"";if(d<=30)return"0-30";if(d<=60)return"31-60";if(d<=90)return"61-90";if(d<365)return"91-364";return"365 O MAS";}
 function reportDateObj(){return parseDate($("reportDate").value)||new Date();}
@@ -832,8 +835,13 @@ const FIELDS=["suplidor","rnc","med","noFactura","cuota","fechaEmision","fechaRe
   "condiciones","envio","codigoProducto","cantidad","precioUnitario"];
 
 function nextPk(){const max=allData.reduce((m,f)=>Math.max(m,+f.pk||0),0);return max+1;}
+const NUM_FORM=new Set(["valorSinItbis","itbis","valorPagado","valorOC","cantidad","precioUnitario"]);
 function readForm(){
-  const o={};FIELDS.forEach(k=>o[k]=$(k).value.trim?$(k).value.trim():$(k).value);
+  const o={};FIELDS.forEach(k=>{
+    let v=$(k).value; v=(typeof v==="string")?v.trim():v;
+    if(NUM_FORM.has(k)){const n=parseFloat(String(v).replace(/,/g,""));v=isNaN(n)?"":n;}
+    o[k]=v;
+  });
   o.id=$("editId").value||("f_"+Date.now()+"_"+Math.floor(Math.random()*1e4));
   if(!o.pk)o.pk=nextPk();
   if(!o.anioDeuda&&o.fechaEmision)o.anioDeuda=o.fechaEmision.slice(0,4);
@@ -866,7 +874,7 @@ const HEADERS=["PK","SUPLIDOR","RNC / CEDULA","MED S / N","PROCESO DE COMPRAS","
   "NO. CERTIFICADO CONTRATO","VIGENCIA CONTRATO","VALOR ORDEN COMPRA","CUOTA PRESUPUESTARIA",
   "No.FACTURAS","FECHA RECEPCION FACTURA","FECHA EMISION FACTURA","AÑO DE LA DEUDA","FECHA HOY",
   "DIAS DE EMITIDA","DIAS SALDO","VALOR SIN ITBIS","ITBIS","TOTAL","VALOR PAGADO","BALANCE PENDIENTE",
-  "CUENTA PRESUPUESARIA","DESCRIPCION","DETALLE / COMENTARIOS","# SOLICITUD","CK /LIBRAMIENTO",
+  "CUENTA PRESUPUESTARIA","DESCRIPCION","DETALLE / COMENTARIOS","# SOLICITUD","CK /LIBRAMIENTO",
   "FECHA DEL LIBRAMIENTO","FECHA DEL PAGO"];
 
 function exportExcel(){
